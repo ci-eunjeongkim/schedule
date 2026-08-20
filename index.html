@@ -110,22 +110,24 @@
     .layout{grid-template-columns:1fr;}
   }
   @media (max-width:520px){
-    .app{ padding:16px 12px 40px; }
+    .app{ padding:14px 8px 32px; }
     .brand{ font-size:19px; }
-    .topbar{ margin-bottom:16px; gap:10px; }
+    .topbar{ margin-bottom:14px; gap:10px; }
     .countdown-wrap{ padding:9px 12px; min-width:0; flex-basis:100%; }
     .countdown-time{ font-size:18px; }
-    .cal-card{ padding:14px 10px 8px; }
+    .cal-card{ padding:12px 8px 6px; border-radius:12px; }
     .cal-month{ font-size:17px; }
-    .side-card{ padding:13px; }
+    .side-card{ padding:12px; border-radius:12px; }
+    .side{ gap:12px; }
+    .layout{ gap:12px; }
     .weekdays div{ font-size:10.5px; }
-    .cell{ padding:5px 4px; border-radius:7px; }
+    .cell{ padding:5px 3px; border-radius:7px; }
     .cell-date{ font-size:11.5px; }
     .dot{ width:4px; height:4px; }
     .cell-count{ font-size:9px; bottom:4px; right:5px; }
-    .grid{ gap:3px; }
+    .grid{ gap:2px; }
     .modal{ padding:18px 16px; max-width:100%; }
-    .overlay{ padding:12px; }
+    .overlay{ padding:10px; }
     .icon-btn{ width:34px; height:34px; }
     .today-btn{ height:34px; }
   }
@@ -322,38 +324,6 @@
     color:var(--ink-soft);
     margin-top:3px;
   }
-  .chip-input-row{
-    display:flex;
-    gap:6px;
-  }
-  .chip-list{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-    margin-top:8px;
-  }
-  .chip{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    background:var(--accent-soft);
-    color:var(--accent-deep);
-    border-radius:20px;
-    padding:4px 6px 4px 11px;
-    font-size:12px;
-    font-weight:500;
-  }
-  .chip-remove{
-    background:none;
-    border:none;
-    cursor:pointer;
-    color:var(--accent-deep);
-    opacity:0.6;
-    font-size:13px;
-    line-height:1;
-    padding:2px;
-  }
-  .chip-remove:hover{opacity:1;}
   .event-loc-btn{
     display:inline-flex;
     align-items:center;
@@ -620,6 +590,14 @@
   <div class="modal">
     <h3 id="modalTitle">일정 추가</h3>
     <div class="field">
+      <label for="inpCategory">구분 <span style="color:var(--reminder); font-weight:600;">*</span></label>
+      <select id="inpCategory">
+        <option value="" disabled selected>선택해주세요</option>
+        <option value="신규">신규</option>
+        <option value="하자보수">하자보수</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="inpTitle">제목</label>
       <input id="inpTitle" type="text" placeholder="예: 팀 회의" maxlength="60">
     </div>
@@ -643,14 +621,6 @@
       <div class="modal-map" id="modalMap">
         <div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>
       </div>
-    </div>
-    <div class="field">
-      <label for="inpAttendee">참석자 <span style="color:var(--ink-faint); font-weight:400;">(선택)</span></label>
-      <div class="chip-input-row">
-        <input id="inpAttendee" type="text" placeholder="이름 입력 후 Enter (예: A)" maxlength="30" style="flex:1; min-width:0;">
-        <button type="button" id="attendeeAddBtn" class="today-btn" style="white-space:nowrap; padding:0 14px; flex-shrink:0;">추가</button>
-      </div>
-      <div class="chip-list" id="attendeeChips"></div>
     </div>
     <div class="field">
       <label>비용 정보</label>
@@ -705,6 +675,17 @@
   </div>
 </div>
 
+<div class="overlay" id="nameOverlay" style="display:none;">
+  <div class="modal" style="text-align:center;">
+    <h3 style="margin-bottom:6px;">누구세요?</h3>
+    <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">이름을 선택하고 시작해주세요</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button type="button" class="name-select-btn add-btn" data-name="김연호" style="margin-top:0;">김연호</button>
+      <button type="button" class="name-select-btn add-btn" data-name="김남호" style="margin-top:0;">김남호</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   // ===== Firebase 설정 =====
@@ -738,26 +719,42 @@
     showConfigBanner('⚠️ Firebase 설정이 아직 안 되어 있어요. 코드 상단의 firebaseConfig 값을 본인의 Firebase 프로젝트 설정으로 채워주세요. 그 전까지는 일정이 저장/공유되지 않아요.');
   }
 
-  // ===== 사용자 이름 =====
+  // ===== 사용자 이름 선택 =====
   let myName = '';
   try{ myName = localStorage.getItem('scheduleAppUserName') || ''; }catch(e){}
-  function ensureUserName(){
-    if(!myName){
-      const input = prompt('이름을 입력해주세요 (예: A) — 누가 등록했는지 구분하는 용도예요');
-      myName = (input && input.trim()) ? input.trim() : '익명';
-      try{ localStorage.setItem('scheduleAppUserName', myName); }catch(e){}
-    }
+
+  function updateUserBadge(){
     const badge = document.getElementById('userBadge');
-    badge.innerHTML = `${escapeHtml(myName)}님으로 접속 중 · <a href="#" id="changeNameLink" style="color:var(--accent);">이름 변경</a>`;
-    document.getElementById('changeNameLink').addEventListener('click', (e)=>{
-      e.preventDefault();
-      const input = prompt('새 이름을 입력해주세요', myName);
-      if(input && input.trim()){
-        myName = input.trim();
-        try{ localStorage.setItem('scheduleAppUserName', myName); }catch(err){}
-        ensureUserName();
-      }
+    if(myName){
+      badge.innerHTML = `${escapeHtml(myName)}님 · <a href="#" id="switchNameLink" style="color:var(--accent);">전환</a>`;
+      document.getElementById('switchNameLink').addEventListener('click', (e)=>{
+        e.preventDefault();
+        document.getElementById('nameOverlay').style.display = 'flex';
+      });
+    }else{
+      badge.textContent = '';
+    }
+  }
+
+  document.querySelectorAll('.name-select-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      myName = btn.getAttribute('data-name');
+      try{ localStorage.setItem('scheduleAppUserName', myName); }catch(e){}
+      document.getElementById('nameOverlay').style.display = 'none';
+      updateUserBadge();
     });
+  });
+
+  document.getElementById('nameOverlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'nameOverlay' && myName){
+      document.getElementById('nameOverlay').style.display = 'none';
+    }
+  });
+
+  if(myName){
+    updateUserBadge();
+  }else{
+    document.getElementById('nameOverlay').style.display = 'flex';
   }
 
   let data = { events: {} }; // { "YYYY-MM-DD": [{id,title,start,end,location,attendees,remind,notified,createdBy}] }
@@ -898,9 +895,8 @@
       item.innerHTML = `
         <div class="event-time mono">${timeRange}</div>
         <div class="event-body">
-          <div class="event-title">${escapeHtml(ev.title)}</div>
+          <div class="event-title">${ev.category ? `<span class="mono" style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; margin-right:6px; ${ev.category === '하자보수' ? 'background:var(--reminder-soft); color:var(--reminder);' : 'background:var(--accent-soft); color:var(--accent-deep);'}">${escapeHtml(ev.category)}</span>` : ''}${escapeHtml(ev.title)}</div>
           ${ev.remind && ev.remind !== '0' ? `<div class="event-remind">${remindLabel(ev.remind)} 알림</div>` : ''}
-          ${ev.attendees && ev.attendees.length ? `<div class="event-attendees">👥 ${ev.attendees.map(escapeHtml).join(', ')}</div>` : ''}
           ${ev.createdBy ? `<div class="event-attendees" style="color:var(--ink-faint);">${escapeHtml(ev.createdBy)}님이 등록</div>` : ''}
           ${(ev.matQty || ev.installFee) ? `<div class="event-attendees" style="color:var(--ink-soft);">🧱 매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b></div>` : ''}
           ${ev.location ? `<button class="event-loc-btn" data-id="${ev.id}">📍 ${escapeHtml(ev.location)}</button><div class="event-map" id="map-${ev.id}" style="display:none;"></div>` : ''}
@@ -1074,7 +1070,6 @@
   document.getElementById('inpStart').addEventListener('input', syncEndMin);
 
   let editingId = null;
-  let currentAttendees = [];
   const MAT_UNIT_PRICE = 2200;
   let currentMatQty = 0;
   let currentInstallFee = 150000;
@@ -1114,48 +1109,11 @@
     costOverlay.style.display = 'none';
   });
 
-  function renderAttendeeChips(){
-    const box = document.getElementById('attendeeChips');
-    box.innerHTML = '';
-    currentAttendees.forEach((name, idx)=>{
-      const chip = document.createElement('div');
-      chip.className = 'chip';
-      chip.innerHTML = `<span>${escapeHtml(name)}</span>`;
-      const rm = document.createElement('button');
-      rm.className = 'chip-remove';
-      rm.type = 'button';
-      rm.textContent = '×';
-      rm.addEventListener('click', ()=>{
-        currentAttendees.splice(idx,1);
-        renderAttendeeChips();
-      });
-      chip.appendChild(rm);
-      box.appendChild(chip);
-    });
-  }
-
-  function addAttendeeFromInput(){
-    const inp = document.getElementById('inpAttendee');
-    const val = inp.value.trim();
-    if(val && !currentAttendees.includes(val)){
-      currentAttendees.push(val);
-      renderAttendeeChips();
-    }
-    inp.value = '';
-    inp.focus();
-  }
-  document.getElementById('attendeeAddBtn').addEventListener('click', addAttendeeFromInput);
-  document.getElementById('inpAttendee').addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter' || e.key === ','){
-      e.preventDefault();
-      addAttendeeFromInput();
-    }
-  });
-
   function resetModalForAdd(){
     editingId = null;
     document.getElementById('modalTitle').textContent = '일정 추가';
     document.getElementById('modalSave').textContent = '저장';
+    document.getElementById('inpCategory').value = '';
     document.getElementById('inpTitle').value = '';
     document.getElementById('inpStart').value = '09:00';
     document.getElementById('inpEnd').value = '10:00';
@@ -1163,9 +1121,6 @@
     document.getElementById('inpLocation').value = '';
     document.getElementById('inpLocationDetail').value = '';
     document.getElementById('inpLocationDetail').style.display = 'none';
-    document.getElementById('inpAttendee').value = '';
-    currentAttendees = [];
-    renderAttendeeChips();
     currentMatQty = 0;
     currentInstallFee = 150000;
     updateCostSummaryLine();
@@ -1179,6 +1134,7 @@
     editingId = ev.id;
     document.getElementById('modalTitle').textContent = '일정 수정';
     document.getElementById('modalSave').textContent = '수정 완료';
+    document.getElementById('inpCategory').value = ev.category || '';
     document.getElementById('inpTitle').value = ev.title;
     document.getElementById('inpStart').value = ev.start;
     document.getElementById('inpEnd').value = ev.end || '';
@@ -1186,9 +1142,6 @@
     document.getElementById('inpLocation').value = ev.location || '';
     document.getElementById('inpLocationDetail').value = '';
     document.getElementById('inpLocationDetail').style.display = 'none';
-    document.getElementById('inpAttendee').value = '';
-    currentAttendees = (ev.attendees || []).slice();
-    renderAttendeeChips();
     currentMatQty = ev.matQty != null ? ev.matQty : 0;
     currentInstallFee = ev.installFee != null ? ev.installFee : 150000;
     updateCostSummaryLine();
@@ -1238,6 +1191,12 @@
       alert('Firebase 설정이 아직 안 되어 있어서 저장할 수 없어요. 상단 안내를 확인해주세요.');
       return;
     }
+    const category = document.getElementById('inpCategory').value;
+    if(!category){
+      document.getElementById('inpCategory').focus();
+      alert('구분(신규/하자보수)을 선택해주세요.');
+      return;
+    }
     const title = document.getElementById('inpTitle').value.trim();
     if(!title){
       document.getElementById('inpTitle').focus();
@@ -1259,15 +1218,13 @@
     try{
       if(editingId){
         await updateEventDoc(editingId, {
-          title, start, end, location: fullLocation, remind,
-          attendees: currentAttendees.slice(),
+          category, title, start, end, location: fullLocation, remind,
           matQty, installFee, totalCost
         });
       }else{
         await addEventDoc({
           dateKey: key,
-          title, start, end, location: fullLocation, remind,
-          attendees: currentAttendees.slice(),
+          category, title, start, end, location: fullLocation, remind,
           matQty, installFee, totalCost,
           createdBy: myName
         });
@@ -1308,7 +1265,6 @@
   setInterval(checkReminders, 20000);
 
   render();
-  ensureUserName();
   startRealtimeSync();
 })();
 </script>
