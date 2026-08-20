@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>일정관리</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -35,6 +36,7 @@
     color:var(--ink);
     font-family:'IBM Plex Sans KR','IBM Plex Sans',sans-serif;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   .app{
     max-width:960px;
@@ -65,6 +67,8 @@
     padding:10px 16px;
     box-shadow:var(--shadow-card);
     min-width:220px;
+    flex:1 1 220px;
+    max-width:100%;
   }
   .countdown-label{
     font-size:11px;
@@ -79,7 +83,7 @@
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
-    max-width:260px;
+    max-width:100%;
   }
   .countdown-time{
     font-family:'IBM Plex Mono',monospace;
@@ -104,6 +108,26 @@
   }
   @media (max-width:760px){
     .layout{grid-template-columns:1fr;}
+  }
+  @media (max-width:520px){
+    .app{ padding:16px 12px 40px; }
+    .brand{ font-size:19px; }
+    .topbar{ margin-bottom:16px; gap:10px; }
+    .countdown-wrap{ padding:9px 12px; min-width:0; flex-basis:100%; }
+    .countdown-time{ font-size:18px; }
+    .cal-card{ padding:14px 10px 8px; }
+    .cal-month{ font-size:17px; }
+    .side-card{ padding:13px; }
+    .weekdays div{ font-size:10.5px; }
+    .cell{ padding:5px 4px; border-radius:7px; }
+    .cell-date{ font-size:11.5px; }
+    .dot{ width:4px; height:4px; }
+    .cell-count{ font-size:9px; bottom:4px; right:5px; }
+    .grid{ gap:3px; }
+    .modal{ padding:18px 16px; max-width:100%; }
+    .overlay{ padding:12px; }
+    .icon-btn{ width:34px; height:34px; }
+    .today-btn{ height:34px; }
   }
 
   /* ---------- Calendar card ---------- */
@@ -474,6 +498,9 @@
     width:100%;
     max-width:360px;
     padding:22px;
+    max-height:88vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
   .modal h3{
     font-family:'Manrope',sans-serif;
@@ -609,8 +636,8 @@
     <div class="field">
       <label for="inpLocation">위치 <span style="color:var(--ink-faint); font-weight:400;">(선택)</span></label>
       <div style="display:flex; gap:6px;">
-        <input id="inpLocation" type="text" placeholder="주소 검색 버튼을 눌러주세요" readonly style="background:var(--surface-alt); cursor:pointer;">
-        <button type="button" id="addrSearchBtn" class="today-btn" style="white-space:nowrap; padding:0 14px;">주소 검색</button>
+        <input id="inpLocation" type="text" placeholder="주소 검색 버튼을 눌러주세요" readonly style="background:var(--surface-alt); cursor:pointer; flex:1; min-width:0;">
+        <button type="button" id="addrSearchBtn" class="today-btn" style="white-space:nowrap; padding:0 14px; flex-shrink:0;">주소 검색</button>
       </div>
       <input id="inpLocationDetail" type="text" placeholder="상세 주소 (예: 3층 302호)" maxlength="60" style="margin-top:6px; display:none;">
       <div class="modal-map" id="modalMap">
@@ -620,8 +647,8 @@
     <div class="field">
       <label for="inpAttendee">참석자 <span style="color:var(--ink-faint); font-weight:400;">(선택)</span></label>
       <div class="chip-input-row">
-        <input id="inpAttendee" type="text" placeholder="이름 입력 후 Enter (예: A)" maxlength="30">
-        <button type="button" id="attendeeAddBtn" class="today-btn" style="white-space:nowrap; padding:0 14px;">추가</button>
+        <input id="inpAttendee" type="text" placeholder="이름 입력 후 Enter (예: A)" maxlength="30" style="flex:1; min-width:0;">
+        <button type="button" id="attendeeAddBtn" class="today-btn" style="white-space:nowrap; padding:0 14px; flex-shrink:0;">추가</button>
       </div>
       <div class="chip-list" id="attendeeChips"></div>
     </div>
