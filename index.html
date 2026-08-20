@@ -102,12 +102,11 @@
 
   /* ---------- Layout ---------- */
   .layout{
-    display:grid;
-    grid-template-columns:1fr 300px;
+    display:flex;
+    flex-direction:column;
     gap:20px;
-  }
-  @media (max-width:760px){
-    .layout{grid-template-columns:1fr;}
+    max-width:640px;
+    margin:0 auto;
   }
   @media (max-width:520px){
     .app{ padding:14px 8px 32px; }
@@ -130,7 +129,78 @@
     .overlay{ padding:10px; }
     .icon-btn{ width:34px; height:34px; }
     .today-btn{ height:34px; }
+    .hero-card{ padding:16px 14px; }
+    .hero-day-title{ font-size:20px; }
   }
+
+  /* ---------- Today hero card ---------- */
+  .hero-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:20px 18px;
+    box-shadow:var(--shadow-card);
+  }
+  .hero-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .hero-nav .icon-btn{
+    width:42px;
+    height:42px;
+    font-size:19px;
+    flex-shrink:0;
+  }
+  .hero-day-title{
+    font-family:'Manrope',sans-serif;
+    font-weight:800;
+    font-size:23px;
+    text-align:center;
+    letter-spacing:-0.01em;
+  }
+  .hero-day-date{
+    font-size:13.5px;
+    color:var(--ink-faint);
+    text-align:center;
+    margin-top:2px;
+  }
+  .hero-card .event-item{ padding:15px 8px; }
+  .hero-card .event-time{ font-size:16px; min-width:64px; }
+  .hero-card .event-title{ font-size:17.5px; font-weight:600; line-height:1.4; }
+  .hero-card .event-remind{ font-size:13px; margin-top:4px; }
+  .hero-card .event-attendees{ font-size:12.5px; margin-top:4px; }
+  .hero-card .event-loc-btn{ font-size:12.5px; margin-top:5px; }
+  .hero-card .event-del{ font-size:19px; padding:4px 6px; }
+  .hero-card .empty-msg{
+    font-size:14.5px;
+    text-align:center;
+    padding:26px 0;
+    line-height:1.6;
+  }
+  .hero-card .add-btn{
+    font-size:16px;
+    padding:15px 0;
+    margin-top:16px;
+    border-radius:11px;
+  }
+  .cal-toggle-btn{
+    width:100%;
+    margin-top:10px;
+    background:var(--surface-alt);
+    color:var(--ink-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 0;
+    font-size:14px;
+    font-weight:600;
+    font-family:'IBM Plex Sans KR',sans-serif;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .cal-toggle-btn:hover{ background:var(--border); }
 
   /* ---------- Calendar card ---------- */
   .cal-card{
@@ -279,11 +349,6 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-  }
-  .selected-date-label{
-    font-size:12px;
-    color:var(--ink-faint);
-    font-weight:500;
   }
 
   .event-item{
@@ -543,8 +608,22 @@
     </div>
   </div>
 
-  <div class="layout">
-    <div class="cal-card">
+  <div class="layout single-col">
+    <div class="hero-card">
+      <div class="hero-nav">
+        <button class="icon-btn" id="prevDayBtn">‹</button>
+        <div>
+          <div class="hero-day-title" id="selDayTitle">오늘</div>
+          <div class="hero-day-date mono" id="selDayDate"></div>
+        </div>
+        <button class="icon-btn" id="nextDayBtn">›</button>
+      </div>
+      <div id="eventList"></div>
+      <button class="add-btn" id="addBtn">+ 일정 추가</button>
+      <button class="cal-toggle-btn" id="toggleCalBtn">📅 달력에서 다른 날짜 선택</button>
+    </div>
+
+    <div class="cal-card" id="calCard" style="display:none;">
       <div class="cal-nav">
         <div class="cal-month"><span id="monthLabel"></span><span class="yr" id="yearLabel"></span></div>
         <div class="nav-btns">
@@ -560,15 +639,6 @@
     </div>
 
     <div class="side">
-      <div class="side-card">
-        <div class="side-title">
-          <span id="selDayTitle">오늘</span>
-          <span class="selected-date-label mono" id="selDayDate"></span>
-        </div>
-        <div id="eventList"></div>
-        <button class="add-btn" id="addBtn">+ 일정 추가</button>
-      </div>
-
       <div class="side-card">
         <div class="side-title">다가오는 일정</div>
         <div id="upcomingList"></div>
@@ -862,6 +932,8 @@
           viewDate = new Date(cellDate.getFullYear(), cellDate.getMonth(), 1);
         }
         render();
+        collapseCalendar();
+        document.querySelector('.hero-card').scrollIntoView({behavior:'smooth', block:'start'});
       });
 
       grid.appendChild(cell);
@@ -1030,6 +1102,38 @@
   }
 
   // ---- nav ----
+  const calCard = document.getElementById('calCard');
+  const toggleCalBtn = document.getElementById('toggleCalBtn');
+  function collapseCalendar(){
+    calCard.style.display = 'none';
+    toggleCalBtn.textContent = '📅 달력에서 다른 날짜 선택';
+  }
+  function expandCalendar(){
+    calCard.style.display = 'block';
+    toggleCalBtn.textContent = '📅 달력 닫기';
+  }
+  toggleCalBtn.addEventListener('click', ()=>{
+    if(calCard.style.display === 'none'){
+      expandCalendar();
+      viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      render();
+      calCard.scrollIntoView({behavior:'smooth', block:'start'});
+    }else{
+      collapseCalendar();
+    }
+  });
+
+  document.getElementById('prevDayBtn').addEventListener('click', ()=>{
+    selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()-1);
+    viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    render();
+  });
+  document.getElementById('nextDayBtn').addEventListener('click', ()=>{
+    selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()+1);
+    viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    render();
+  });
+
   document.getElementById('prevBtn').addEventListener('click', ()=>{
     viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1);
     render();
@@ -1182,9 +1286,6 @@
   document.getElementById('inpLocation').addEventListener('click', openAddressSearch);
   document.getElementById('modalCancel').addEventListener('click', ()=>{
     overlay.style.display = 'none';
-  });
-  overlay.addEventListener('click', (e)=>{
-    if(e.target === overlay) overlay.style.display = 'none';
   });
   document.getElementById('modalSave').addEventListener('click', async ()=>{
     if(!fbReady){
