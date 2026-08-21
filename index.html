@@ -535,8 +535,27 @@
     padding:22px;
     max-height:88vh;
     overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
+    position:relative;
   }
+  .modal-close-x{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:none;
+    background:var(--surface-alt);
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:5;
+  }
+  .modal-close-x:hover{background:var(--border); color:var(--ink);}
   .modal h3{
     font-family:'Manrope',sans-serif;
     font-size:16px;
@@ -658,6 +677,7 @@
 
 <div class="overlay" id="overlay" style="display:none;">
   <div class="modal">
+    <button type="button" class="modal-close-x" id="modalCloseX">×</button>
     <h3 id="modalTitle">일정 추가</h3>
     <div class="field">
       <label for="inpCategory">구분 <span style="color:var(--reminder); font-weight:600;">*</span></label>
@@ -684,8 +704,15 @@
     <div class="field">
       <label for="inpLocation">위치 <span style="color:var(--ink-faint); font-weight:400;">(선택)</span></label>
       <div style="display:flex; gap:6px;">
-        <input id="inpLocation" type="text" placeholder="주소 검색 버튼을 눌러주세요" readonly style="background:var(--surface-alt); cursor:pointer; flex:1; min-width:0;">
+        <input id="inpLocation" type="text" placeholder="주소 검색 또는 직접 입력" style="flex:1; min-width:0;">
         <button type="button" id="addrSearchBtn" class="today-btn" style="white-space:nowrap; padding:0 14px; flex-shrink:0;">주소 검색</button>
+      </div>
+      <div id="addrSearchInlinePanel" style="display:none; margin-top:8px; border:1px solid var(--border); border-radius:9px; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:var(--surface-alt); border-bottom:1px solid var(--border);">
+          <span style="font-size:11.5px; color:var(--ink-soft); font-weight:500;">주소를 검색해서 선택해주세요</span>
+          <button type="button" id="addrSearchCloseBtn" style="background:none; border:none; font-size:16px; line-height:1; cursor:pointer; color:var(--ink-soft); padding:2px 4px;">×</button>
+        </div>
+        <div id="addrSearchEmbedWrap" style="height:320px;"></div>
       </div>
       <input id="inpLocationDetail" type="text" placeholder="상세 주소 (예: 3층 302호)" maxlength="60" style="margin-top:6px; display:none;">
       <div class="modal-map" id="modalMap">
@@ -1225,6 +1252,8 @@
     document.getElementById('inpLocation').value = '';
     document.getElementById('inpLocationDetail').value = '';
     document.getElementById('inpLocationDetail').style.display = 'none';
+    document.getElementById('addrSearchInlinePanel').style.display = 'none';
+    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
     currentMatQty = 0;
     currentInstallFee = 150000;
     updateCostSummaryLine();
@@ -1246,6 +1275,8 @@
     document.getElementById('inpLocation').value = ev.location || '';
     document.getElementById('inpLocationDetail').value = '';
     document.getElementById('inpLocationDetail').style.display = 'none';
+    document.getElementById('addrSearchInlinePanel').style.display = 'none';
+    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
     currentMatQty = ev.matQty != null ? ev.matQty : 0;
     currentInstallFee = ev.installFee != null ? ev.installFee : 150000;
     updateCostSummaryLine();
@@ -1269,22 +1300,62 @@
       mapEl.innerHTML = '<div class="map-msg">주소 검색 기능을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>';
       return;
     }
+    const panel = document.getElementById('addrSearchInlinePanel');
+    const wrap = document.getElementById('addrSearchEmbedWrap');
+    panel.style.display = 'block';
+    wrap.innerHTML = '';
     new daum.Postcode({
       oncomplete: function(data){
         const addr = data.roadAddress || data.jibunAddress || data.address;
-        document.getElementById('inpLocation').value = addr;
+        document.getElementById('inpLocation').value = addr || '(주소값 없음)';
         const detailEl = document.getElementById('inpLocationDetail');
         detailEl.style.display = 'block';
-        detailEl.focus();
         const mapEl = document.getElementById('modalMap');
-        const q = encodeURIComponent(addr);
+        const q = encodeURIComponent(addr || '');
         mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-      }
-    }).open();
+        panel.style.display = 'none';
+        wrap.innerHTML = '';
+        detailEl.focus();
+      },
+      onclose: function(state){
+        if(state === 'FORCE_CLOSE'){
+          panel.style.display = 'none';
+          wrap.innerHTML = '';
+        }
+      },
+      width: '100%',
+      height: '100%'
+    }).embed(wrap);
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
   document.getElementById('addrSearchBtn').addEventListener('click', openAddressSearch);
-  document.getElementById('inpLocation').addEventListener('click', openAddressSearch);
+
+  let locTypeDebounce = null;
+  document.getElementById('inpLocation').addEventListener('input', (e)=>{
+    const val = e.target.value.trim();
+    clearTimeout(locTypeDebounce);
+    const mapEl = document.getElementById('modalMap');
+    const detailEl = document.getElementById('inpLocationDetail');
+    if(!val){
+      mapEl.innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
+      detailEl.style.display = 'none';
+      return;
+    }
+    detailEl.style.display = 'block';
+    mapEl.innerHTML = '<div class="map-msg">지도를 불러오는 중...</div>';
+    locTypeDebounce = setTimeout(()=>{
+      const q = encodeURIComponent(val);
+      mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    }, 600);
+  });
+  document.getElementById('addrSearchCloseBtn').addEventListener('click', ()=>{
+    document.getElementById('addrSearchInlinePanel').style.display = 'none';
+    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
+  });
   document.getElementById('modalCancel').addEventListener('click', ()=>{
+    overlay.style.display = 'none';
+  });
+  document.getElementById('modalCloseX').addEventListener('click', ()=>{
     overlay.style.display = 'none';
   });
   document.getElementById('modalSave').addEventListener('click', async ()=>{
