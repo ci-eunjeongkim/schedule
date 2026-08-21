@@ -120,11 +120,11 @@
     .side{ gap:12px; }
     .layout{ gap:12px; }
     .weekdays div{ font-size:10.5px; }
-    .cell{ padding:5px 3px; border-radius:7px; min-height:40px; }
+    .cell{ padding:5px 3px; border-radius:7px; height:40px; }
     .cell-date{ font-size:11.5px; }
     .dot{ width:4px; height:4px; }
     .cell-count{ font-size:9px; bottom:4px; right:5px; }
-    .grid{ gap:2px; }
+    .grid{ border-spacing:2px; }
     .modal{ padding:18px 16px; max-width:100%; }
     .overlay{ padding:10px; }
     .icon-btn{ width:34px; height:34px; }
@@ -263,12 +263,18 @@
   .today-btn:hover{background:var(--surface-alt); color:var(--ink);}
 
   .weekdays{
-    display:grid;
-    grid-template-columns:repeat(7,minmax(0,1fr));
+    display:block;
     margin-bottom:4px;
     width:100%;
+    box-sizing:border-box;
   }
-  .weekdays div{
+  .weekdays-row{
+    display:table;
+    width:100%;
+    table-layout:fixed;
+  }
+  .weekdays-row div{
+    display:table-cell;
     text-align:center;
     font-size:11.5px;
     color:var(--ink-faint);
@@ -276,19 +282,25 @@
     font-weight:500;
     overflow:hidden;
   }
-  .weekdays div:first-child{color:#C6595F;}
-  .weekdays div:last-child{color:#3D6FA3;}
+  .weekdays-row div:first-child{color:#C6595F;}
+  .weekdays-row div:last-child{color:#3D6FA3;}
 
   .grid{
-    display:grid;
-    grid-template-columns:repeat(7,minmax(0,1fr));
-    gap:4px;
+    display:table;
     width:100%;
+    table-layout:fixed;
+    border-collapse:separate;
+    border-spacing:4px;
+    box-sizing:border-box;
+  }
+  .grid-row{
+    display:table-row;
   }
   .cell{
+    display:table-cell;
     position:relative;
-    min-height:48px;
-    min-width:0;
+    height:48px;
+    vertical-align:top;
     border-radius:9px;
     padding:7px 6px;
     cursor:pointer;
@@ -661,7 +673,7 @@
         </div>
       </div>
       <div class="weekdays">
-        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+        <div class="weekdays-row"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
       </div>
       <div class="grid" id="calGrid"></div>
     </div>
@@ -927,8 +939,14 @@
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
     const today = new Date();
+    let rowEl = null;
 
     for(let i=0;i<42;i++){
+      if(i % 7 === 0){
+        rowEl = document.createElement('div');
+        rowEl.className = 'grid-row';
+        grid.appendChild(rowEl);
+      }
       const cellDate = new Date(gridStart);
       cellDate.setDate(gridStart.getDate()+i);
       const key = dateKey(cellDate);
@@ -972,7 +990,7 @@
         document.querySelector('.hero-card').scrollIntoView({behavior:'smooth', block:'start'});
       });
 
-      grid.appendChild(cell);
+      rowEl.appendChild(cell);
     }
   }
 
