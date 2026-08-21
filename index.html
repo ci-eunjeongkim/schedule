@@ -315,6 +315,13 @@
     background:var(--accent-soft);
     border-color:var(--accent);
   }
+  .cell.is-today{
+    background:#FBF3E7;
+  }
+  .cell.selected.is-today{
+    background:#FBF3E7;
+    border-color:var(--accent);
+  }
   .cell-date{
     font-family:'IBM Plex Mono',monospace;
     font-size:12.5px;
@@ -322,16 +329,8 @@
     color:var(--ink-soft);
   }
   .cell.selected .cell-date{color:var(--accent-deep); font-weight:600;}
-  .cell.is-today .cell-date::after{
-    content:'';
-    display:inline-block;
-    width:5px;height:5px;
-    border-radius:50%;
-    background:var(--accent);
-    margin-left:5px;
-    vertical-align:middle;
-    animation:pulse 1.8s ease-in-out infinite;
-  }
+  .cell.is-today .cell-date{color:#96712F; font-weight:700;}
+  .cell.selected.is-today .cell-date{color:#96712F;}
   .cell-dots{
     display:flex;
     gap:3px;
@@ -498,16 +497,44 @@
   .upcoming-item{
     display:flex;
     justify-content:space-between;
-    align-items:baseline;
-    padding:7px 0;
+    align-items:flex-start;
+    gap:10px;
+    padding:10px 8px;
+    margin:0 -8px;
     border-bottom:1px solid var(--border);
     font-size:12.5px;
+    cursor:pointer;
+    border-radius:6px;
+    transition:background .12s;
   }
+  .upcoming-item:hover{background:var(--surface-alt);}
   .upcoming-item:last-child{border-bottom:none;}
+  .upcoming-item-main{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+  .upcoming-name{
+    font-weight:600;
+    color:var(--ink);
+    font-size:13.5px;
+  }
+  .upcoming-loc{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:190px;
+  }
+  .upcoming-loc-empty{color:var(--ink-faint);}
   .upcoming-date{
     font-family:'IBM Plex Mono',monospace;
     color:var(--ink-faint);
     font-size:11px;
+    flex-shrink:0;
+    padding-top:2px;
   }
 
   .notif-toggle{
@@ -660,7 +687,7 @@
       </div>
       <div id="eventList"></div>
       <button class="add-btn" id="addBtn">+ 일정 추가</button>
-      <button class="cal-toggle-btn" id="toggleCalBtn">📅 달력에서 다른 날짜 선택</button>
+      <button class="cal-toggle-btn" id="toggleCalBtn">📅 달력 크게 보기</button>
     </div>
 
     <div class="cal-card" id="calCard" style="display:none;">
@@ -709,8 +736,8 @@
       </select>
     </div>
     <div class="field">
-      <label for="inpTitle">제목</label>
-      <input id="inpTitle" type="text" placeholder="예: 팀 회의" maxlength="60">
+      <label for="inpTitle">고객 성함</label>
+      <input id="inpTitle" type="text" placeholder="예: 홍길동" maxlength="60">
     </div>
     <div class="field" style="display:flex; gap:10px;">
       <div style="flex:1;">
@@ -789,6 +816,40 @@
     <div class="modal-actions">
       <button class="btn-cancel" id="costModalCancel">취소</button>
       <button class="btn-save" id="costModalConfirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detailOverlay" style="display:none;">
+  <div class="modal" style="max-width:380px;">
+    <button type="button" class="modal-close-x" id="detailCloseX">×</button>
+    <div id="detailCategoryBadge" style="display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; margin-bottom:8px;"></div>
+    <h3 id="detailName" style="margin-bottom:2px;">-</h3>
+    <div id="detailDate" class="mono" style="font-size:12.5px; color:var(--ink-faint); margin-bottom:16px;"></div>
+
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">위치</div>
+        <div id="detailLocation" style="font-size:13.5px; color:var(--ink);">-</div>
+        <div class="modal-map" id="detailMap" style="display:none; margin-top:8px;"></div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">비용 정보</div>
+        <div id="detailCost" style="font-size:13.5px; color:var(--ink);">-</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">알림</div>
+        <div id="detailRemind" style="font-size:13.5px; color:var(--ink);">-</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">등록자</div>
+        <div id="detailCreatedBy" style="font-size:13.5px; color:var(--ink);">-</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="detailCloseBtn">닫기</button>
+      <button class="btn-save" id="detailEditBtn">수정</button>
     </div>
   </div>
 </div>
@@ -1095,9 +1156,13 @@
       item.className = 'upcoming-item';
       const md = `${ev.dt.getMonth()+1}/${ev.dt.getDate()}`;
       item.innerHTML = `
-        <span>${escapeHtml(ev.title)}</span>
+        <div class="upcoming-item-main">
+          <span class="upcoming-name">${escapeHtml(ev.title)}</span>
+          ${ev.location ? `<span class="upcoming-loc">📍 ${escapeHtml(ev.location)}</span>` : '<span class="upcoming-loc upcoming-loc-empty">위치 미등록</span>'}
+        </div>
         <span class="upcoming-date">${md} ${ev.start}</span>
       `;
+      item.addEventListener('click', ()=> openDetailView(ev));
       list.appendChild(item);
     });
   }
@@ -1160,7 +1225,7 @@
   const toggleCalBtn = document.getElementById('toggleCalBtn');
   function collapseCalendar(){
     calCard.style.display = 'none';
-    toggleCalBtn.textContent = '📅 달력에서 다른 날짜 선택';
+    toggleCalBtn.textContent = '📅 달력 크게 보기';
   }
   function expandCalendar(){
     calCard.style.display = 'block';
@@ -1320,6 +1385,62 @@
   }
 
   document.getElementById('addBtn').addEventListener('click', resetModalForAdd);
+
+  let currentDetailEv = null;
+  function openDetailView(ev){
+    currentDetailEv = ev;
+    const badge = document.getElementById('detailCategoryBadge');
+    if(ev.category){
+      badge.style.display = 'inline-block';
+      badge.textContent = ev.category;
+      if(ev.category === '하자보수'){
+        badge.style.background = 'var(--reminder-soft)';
+        badge.style.color = 'var(--reminder)';
+      }else{
+        badge.style.background = 'var(--accent-soft)';
+        badge.style.color = 'var(--accent-deep)';
+      }
+    }else{
+      badge.style.display = 'none';
+    }
+    document.getElementById('detailName').textContent = ev.title;
+    const timeRange = ev.end ? `${ev.start}–${ev.end}` : ev.start;
+    document.getElementById('detailDate').textContent = `${ev.dt.getMonth()+1}월 ${ev.dt.getDate()}일 · ${timeRange}`;
+
+    const locEl = document.getElementById('detailLocation');
+    const mapEl = document.getElementById('detailMap');
+    if(ev.location){
+      locEl.textContent = ev.location;
+      const q = encodeURIComponent(ev.location);
+      mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+      mapEl.style.display = 'block';
+    }else{
+      locEl.textContent = '등록된 위치가 없어요';
+      mapEl.style.display = 'none';
+      mapEl.innerHTML = '';
+    }
+
+    const costEl = document.getElementById('detailCost');
+    if(ev.matQty || ev.installFee){
+      costEl.innerHTML = `매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b>`;
+    }else{
+      costEl.textContent = '등록된 비용 정보가 없어요';
+    }
+
+    document.getElementById('detailRemind').textContent = (ev.remind && ev.remind !== '0') ? remindLabel(ev.remind) + ' 알림' : '알림 없음';
+    document.getElementById('detailCreatedBy').textContent = ev.createdBy || '-';
+    document.getElementById('detailOverlay').style.display = 'flex';
+  }
+  document.getElementById('detailCloseBtn').addEventListener('click', ()=>{
+    document.getElementById('detailOverlay').style.display = 'none';
+  });
+  document.getElementById('detailCloseX').addEventListener('click', ()=>{
+    document.getElementById('detailOverlay').style.display = 'none';
+  });
+  document.getElementById('detailEditBtn').addEventListener('click', ()=>{
+    document.getElementById('detailOverlay').style.display = 'none';
+    if(currentDetailEv) openModalForEdit(currentDetailEv);
+  });
 
   function openAddressSearch(){
     if(typeof daum === 'undefined' || !daum.Postcode){
