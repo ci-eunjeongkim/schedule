@@ -120,7 +120,7 @@
     .side{ gap:12px; }
     .layout{ gap:12px; }
     .weekdays div{ font-size:10.5px; }
-    .cell{ padding:5px 3px; border-radius:7px; }
+    .cell{ padding:5px 3px; border-radius:7px; min-height:40px; }
     .cell-date{ font-size:11.5px; }
     .dot{ width:4px; height:4px; }
     .cell-count{ font-size:9px; bottom:4px; right:5px; }
@@ -209,6 +209,9 @@
     border-radius:var(--radius-lg);
     padding:18px 18px 10px;
     box-shadow:var(--shadow-card);
+    overflow-x:hidden;
+    box-sizing:border-box;
+    width:100%;
   }
   .cal-nav{
     display:flex;
@@ -261,8 +264,9 @@
 
   .weekdays{
     display:grid;
-    grid-template-columns:repeat(7,1fr);
+    grid-template-columns:repeat(7,minmax(0,1fr));
     margin-bottom:4px;
+    width:100%;
   }
   .weekdays div{
     text-align:center;
@@ -270,23 +274,28 @@
     color:var(--ink-faint);
     padding-bottom:8px;
     font-weight:500;
+    overflow:hidden;
   }
   .weekdays div:first-child{color:#C6595F;}
   .weekdays div:last-child{color:#3D6FA3;}
 
   .grid{
     display:grid;
-    grid-template-columns:repeat(7,1fr);
+    grid-template-columns:repeat(7,minmax(0,1fr));
     gap:4px;
+    width:100%;
   }
   .cell{
     position:relative;
-    aspect-ratio:1/0.86;
+    min-height:48px;
+    min-width:0;
     border-radius:9px;
     padding:7px 6px;
     cursor:pointer;
     border:1px solid transparent;
     transition:background .12s, border-color .12s;
+    box-sizing:border-box;
+    overflow:hidden;
   }
   .cell:hover{background:var(--surface-alt);}
   .cell.other-month{opacity:0.32;}
