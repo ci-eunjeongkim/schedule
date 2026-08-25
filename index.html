@@ -537,35 +537,6 @@
     padding-top:2px;
   }
 
-  .notif-toggle{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    font-size:12.5px;
-    color:var(--ink-soft);
-  }
-  .switch{
-    width:38px;height:22px;
-    border-radius:20px;
-    background:var(--surface-alt);
-    border:1px solid var(--border);
-    position:relative;
-    cursor:pointer;
-    flex-shrink:0;
-  }
-  .switch.on{background:var(--accent);}
-  .switch::after{
-    content:'';
-    position:absolute;
-    top:2px;left:2px;
-    width:16px;height:16px;
-    border-radius:50%;
-    background:#fff;
-    transition:transform .15s;
-    box-shadow:0 1px 2px rgba(0,0,0,0.2);
-  }
-  .switch.on::after{transform:translateX(16px);}
-
   /* ---------- Modal ---------- */
   .overlay{
     position:fixed; inset:0;
@@ -710,13 +681,6 @@
         <div class="side-title">다가오는 일정</div>
         <div id="upcomingList"></div>
       </div>
-
-      <div class="side-card">
-        <div class="notif-toggle">
-          <span id="notifLabel">브라우저 알림 켜기</span>
-          <div class="switch" id="notifSwitch"></div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -856,11 +820,27 @@
 
 <div class="overlay" id="nameOverlay" style="display:none;">
   <div class="modal" style="text-align:center;">
-    <h3 style="margin-bottom:6px;">누구세요?</h3>
-    <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">이름을 선택하고 시작해주세요</div>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <button type="button" class="name-select-btn add-btn" data-name="김연호" style="margin-top:0;">김연호</button>
-      <button type="button" class="name-select-btn add-btn" data-name="김남호" style="margin-top:0;">김남호</button>
+    <div id="loginView">
+      <h3 style="margin-bottom:6px;">비밀번호 입력</h3>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">4자리 비밀번호를 입력해주세요</div>
+      <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:12px; padding:12px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
+      <div id="loginError" style="color:#C6595F; font-size:12px; margin-top:8px; min-height:16px;"></div>
+      <button type="button" id="loginSubmitBtn" class="add-btn" style="margin-top:10px;">입장하기</button>
+      <div style="margin-top:14px; font-size:12.5px;">
+        <a href="#" id="gotoSignupLink" style="color:var(--accent);">처음이세요? 가입하기</a>
+      </div>
+    </div>
+    <div id="signupView" style="display:none;">
+      <h3 style="margin-bottom:6px;">가입하기</h3>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">이름과 사용할 4자리 비밀번호를 정해주세요</div>
+      <div style="text-align:left; font-size:12px; color:var(--ink-soft); margin-bottom:5px; font-weight:500;">이름</div>
+      <input id="signupName" type="text" maxlength="20" style="width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; padding:11px; margin-bottom:10px; font-size:14px; font-family:'IBM Plex Sans KR',sans-serif;">
+      <input id="signupPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:12px; padding:12px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
+      <div id="signupError" style="color:#C6595F; font-size:12px; margin-top:8px; min-height:16px;"></div>
+      <button type="button" id="signupSubmitBtn" class="add-btn" style="margin-top:10px;">가입하고 시작하기</button>
+      <div style="margin-top:14px; font-size:12.5px;">
+        <a href="#" id="gotoLoginLink" style="color:var(--accent);">이미 가입했어요, 로그인</a>
+      </div>
     </div>
   </div>
 </div>
@@ -898,30 +878,155 @@
     showConfigBanner('⚠️ Firebase 설정이 아직 안 되어 있어요. 코드 상단의 firebaseConfig 값을 본인의 Firebase 프로젝트 설정으로 채워주세요. 그 전까지는 일정이 저장/공유되지 않아요.');
   }
 
-  // ===== 사용자 이름 선택 =====
+  // ===== 사용자 로그인/가입 (이름 + 4자리 비밀번호) =====
   let myName = '';
-  try{ myName = localStorage.getItem('scheduleAppUserName') || ''; }catch(e){}
+  let myMemberId = '';
+  try{
+    myName = localStorage.getItem('scheduleAppUserName') || '';
+    myMemberId = localStorage.getItem('scheduleAppMemberId') || '';
+  }catch(e){}
 
   function updateUserBadge(){
     const badge = document.getElementById('userBadge');
     if(myName){
-      badge.innerHTML = `${escapeHtml(myName)}님 · <a href="#" id="switchNameLink" style="color:var(--accent);">전환</a>`;
+      badge.innerHTML = `${escapeHtml(myName)}님 · <a href="#" id="switchNameLink" style="color:var(--accent);">전환</a> · <a href="#" id="deleteAccountLink" style="color:#C6595F;">계정삭제</a>`;
       document.getElementById('switchNameLink').addEventListener('click', (e)=>{
         e.preventDefault();
+        showLoginView();
         document.getElementById('nameOverlay').style.display = 'flex';
+      });
+      document.getElementById('deleteAccountLink').addEventListener('click', (e)=>{
+        e.preventDefault();
+        deleteAccount();
       });
     }else{
       badge.textContent = '';
     }
   }
 
-  document.querySelectorAll('.name-select-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      myName = btn.getAttribute('data-name');
-      try{ localStorage.setItem('scheduleAppUserName', myName); }catch(e){}
+  async function deleteAccount(){
+    if(!myMemberId){
+      alert('계정 정보를 찾을 수 없어요. 다시 로그인한 뒤 시도해주세요.');
+      return;
+    }
+    if(!confirm(`정말 '${myName}' 계정을 삭제할까요?\n비밀번호로 다시 로그인할 수 없게 되고, 이 작업은 되돌릴 수 없어요.`)) return;
+    try{
+      await db.collection('members').doc(myMemberId).delete();
+      myName = '';
+      myMemberId = '';
+      try{
+        localStorage.removeItem('scheduleAppUserName');
+        localStorage.removeItem('scheduleAppMemberId');
+      }catch(e){}
+      updateUserBadge();
+      showLoginView();
+      document.getElementById('nameOverlay').style.display = 'flex';
+    }catch(e){
+      console.error(e);
+      alert('계정 삭제 중 오류가 발생했어요.');
+    }
+  }
+
+  function showLoginView(){
+    document.getElementById('loginView').style.display = 'block';
+    document.getElementById('signupView').style.display = 'none';
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginPin').value = '';
+    setTimeout(()=>document.getElementById('loginPin').focus(), 50);
+  }
+  function showSignupView(){
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('signupView').style.display = 'block';
+    document.getElementById('signupError').textContent = '';
+    document.getElementById('signupName').value = '';
+    document.getElementById('signupPin').value = '';
+    setTimeout(()=>document.getElementById('signupName').focus(), 50);
+  }
+  document.getElementById('gotoSignupLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    showSignupView();
+  });
+  document.getElementById('gotoLoginLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    showLoginView();
+  });
+
+  async function attemptLogin(){
+    const pin = document.getElementById('loginPin').value.trim();
+    const errEl = document.getElementById('loginError');
+    if(!/^\d{4}$/.test(pin)){
+      errEl.textContent = '4자리 숫자를 입력해주세요.';
+      return;
+    }
+    if(!fbReady){
+      errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.';
+      return;
+    }
+    errEl.textContent = '';
+    try{
+      const snap = await db.collection('members').where('pin','==',pin).limit(1).get();
+      if(snap.empty){
+        errEl.textContent = '비밀번호가 일치하는 계정이 없어요.';
+        return;
+      }
+      myName = snap.docs[0].data().name;
+      myMemberId = snap.docs[0].id;
+      try{
+        localStorage.setItem('scheduleAppUserName', myName);
+        localStorage.setItem('scheduleAppMemberId', myMemberId);
+      }catch(e){}
       document.getElementById('nameOverlay').style.display = 'none';
       updateUserBadge();
-    });
+    }catch(e){
+      console.error(e);
+      errEl.textContent = '로그인 중 오류가 발생했어요.';
+    }
+  }
+  document.getElementById('loginSubmitBtn').addEventListener('click', attemptLogin);
+  document.getElementById('loginPin').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') attemptLogin();
+  });
+
+  async function attemptSignup(){
+    const name = document.getElementById('signupName').value.trim();
+    const pin = document.getElementById('signupPin').value.trim();
+    const errEl = document.getElementById('signupError');
+    if(!name){
+      errEl.textContent = '이름을 입력해주세요.';
+      return;
+    }
+    if(!/^\d{4}$/.test(pin)){
+      errEl.textContent = '비밀번호는 숫자 4자리여야 해요.';
+      return;
+    }
+    if(!fbReady){
+      errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.';
+      return;
+    }
+    errEl.textContent = '';
+    try{
+      const dupSnap = await db.collection('members').where('pin','==',pin).limit(1).get();
+      if(!dupSnap.empty){
+        errEl.textContent = '이미 사용 중인 비밀번호예요. 다른 번호로 정해주세요.';
+        return;
+      }
+      const docRef = await db.collection('members').add({ name, pin, createdAt: Date.now() });
+      myName = name;
+      myMemberId = docRef.id;
+      try{
+        localStorage.setItem('scheduleAppUserName', myName);
+        localStorage.setItem('scheduleAppMemberId', myMemberId);
+      }catch(e){}
+      document.getElementById('nameOverlay').style.display = 'none';
+      updateUserBadge();
+    }catch(e){
+      console.error(e);
+      errEl.textContent = '가입 중 오류가 발생했어요.';
+    }
+  }
+  document.getElementById('signupSubmitBtn').addEventListener('click', attemptSignup);
+  document.getElementById('signupPin').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') attemptSignup();
   });
 
   document.getElementById('nameOverlay').addEventListener('click', (e)=>{
@@ -933,13 +1038,13 @@
   if(myName){
     updateUserBadge();
   }else{
+    showLoginView();
     document.getElementById('nameOverlay').style.display = 'flex';
   }
 
   let data = { events: {} }; // { "YYYY-MM-DD": [{id,title,start,end,location,attendees,remind,notified,createdBy}] }
   let viewDate = new Date();
   let selectedDate = new Date();
-  let notifOn = false;
 
   const pad = n => String(n).padStart(2,'0');
   const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -1088,9 +1193,9 @@
           ${(ev.matQty || ev.installFee) ? `<div class="event-attendees" style="color:var(--ink-soft);">🧱 매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b></div>` : ''}
           ${ev.location ? `<button class="event-loc-btn" data-id="${ev.id}">📍 ${escapeHtml(ev.location)}</button><div class="event-map" id="map-${ev.id}" style="display:none;"></div>` : ''}
         </div>
-        <button class="event-del" data-id="${ev.id}" title="삭제">×</button>
+        ${ev.createdBy === myName ? `<button class="event-del" data-id="${ev.id}" title="삭제">×</button>` : ''}
       `;
-      item.addEventListener('click', ()=> openModalForEdit(ev));
+      item.addEventListener('click', ()=> openDetailView(ev));
       list.appendChild(item);
     });
 
@@ -1186,31 +1291,6 @@
     const s = Math.floor((diff%60000)/1000);
     timeEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
     if(diff < 60000) timeEl.classList.add('pulse'); else timeEl.classList.remove('pulse');
-  }
-
-  let notifiedLocal = new Set();
-  try{ notifiedLocal = new Set(JSON.parse(localStorage.getItem('scheduleAppNotified') || '[]')); }catch(e){}
-  function markNotifiedLocal(id){
-    notifiedLocal.add(id);
-    try{ localStorage.setItem('scheduleAppNotified', JSON.stringify([...notifiedLocal])); }catch(e){}
-  }
-
-  function checkReminders(){
-    if(!notifOn || !('Notification' in window) || Notification.permission !== 'granted') return;
-    const now = new Date();
-    for(const key in data.events){
-      for(const ev of data.events[key]){
-        if(!ev.remind || ev.remind === '0' || notifiedLocal.has(ev.id)) continue;
-        const evDt = new Date(`${key}T${ev.start}:00`);
-        const remindAt = new Date(evDt.getTime() - parseInt(ev.remind,10)*60000);
-        if(now >= remindAt && now <= evDt){
-          new Notification('📅 ' + ev.title, {
-            body: `${key} ${ev.start} 일정 알림`,
-          });
-          markNotifiedLocal(ev.id);
-        }
-      }
-    }
   }
 
   function render(){
@@ -1405,7 +1485,10 @@
     }
     document.getElementById('detailName').textContent = ev.title;
     const timeRange = ev.end ? `${ev.start}–${ev.end}` : ev.start;
-    document.getElementById('detailDate').textContent = `${ev.dt.getMonth()+1}월 ${ev.dt.getDate()}일 · ${timeRange}`;
+    const evDate = ev.dt || (ev.dateKey ? new Date(`${ev.dateKey}T00:00:00`) : null);
+    document.getElementById('detailDate').textContent = evDate
+      ? `${evDate.getMonth()+1}월 ${evDate.getDate()}일 · ${timeRange}`
+      : timeRange;
 
     const locEl = document.getElementById('detailLocation');
     const mapEl = document.getElementById('detailMap');
@@ -1429,6 +1512,7 @@
 
     document.getElementById('detailRemind').textContent = (ev.remind && ev.remind !== '0') ? remindLabel(ev.remind) + ' 알림' : '알림 없음';
     document.getElementById('detailCreatedBy').textContent = ev.createdBy || '-';
+    document.getElementById('detailEditBtn').style.display = (ev.createdBy === myName) ? 'block' : 'none';
     document.getElementById('detailOverlay').style.display = 'flex';
   }
   document.getElementById('detailCloseBtn').addEventListener('click', ()=>{
@@ -1557,32 +1641,7 @@
     saveBtn.disabled = false;
   });
 
-  // ---- notifications ----
-  const notifSwitch = document.getElementById('notifSwitch');
-  const notifLabel = document.getElementById('notifLabel');
-  notifSwitch.addEventListener('click', async ()=>{
-    if(!('Notification' in window)){
-      notifLabel.textContent = '이 브라우저는 알림을 지원하지 않아요';
-      return;
-    }
-    if(!notifOn){
-      const perm = await Notification.requestPermission();
-      if(perm === 'granted'){
-        notifOn = true;
-        notifSwitch.classList.add('on');
-        notifLabel.textContent = '브라우저 알림 켜짐';
-      }else{
-        notifLabel.textContent = '알림 권한이 필요해요';
-      }
-    }else{
-      notifOn = false;
-      notifSwitch.classList.remove('on');
-      notifLabel.textContent = '브라우저 알림 켜기';
-    }
-  });
-
   setInterval(updateCountdown, 1000);
-  setInterval(checkReminders, 20000);
 
   render();
   startRealtimeSync();
