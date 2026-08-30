@@ -170,7 +170,6 @@
   .hero-card .event-item{ padding:15px 8px; }
   .hero-card .event-time{ font-size:16px; min-width:64px; }
   .hero-card .event-title{ font-size:17.5px; font-weight:600; line-height:1.4; }
-  .hero-card .event-remind{ font-size:13px; margin-top:4px; }
   .hero-card .event-attendees{ font-size:12.5px; margin-top:4px; }
   .hero-card .event-loc-btn{ font-size:12.5px; margin-top:5px; }
   .hero-card .event-del{ font-size:19px; padding:4px 6px; }
@@ -342,7 +341,6 @@
     border-radius:50%;
     background:var(--accent);
   }
-  .dot.reminder{background:var(--reminder);}
   .cell-count{
     position:absolute;
     bottom:6px;
@@ -398,11 +396,6 @@
     font-weight:500;
     color:var(--ink);
     word-break:break-word;
-  }
-  .event-remind{
-    font-size:11px;
-    color:var(--reminder);
-    margin-top:2px;
   }
   .event-attendees{
     font-size:11px;
@@ -681,10 +674,16 @@
         <div class="side-title">다가오는 일정</div>
         <div id="upcomingList"></div>
       </div>
+
+      <div class="side-card">
+        <div class="side-title">월별 비용</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">월별로 등록된 매트/시공비 합계를 확인해요.</div>
+        <button type="button" class="add-btn" id="openCostSummaryBtn" style="margin-top:0;">💰 월별 비용 보기</button>
+      </div>
     </div>
   </div>
 
-  <div class="footnote">데이터는 이 브라우저 계정에 안전하게 저장돼요. 알림은 이 탭이 열려 있을 때 울려요.</div>
+  <div class="footnote">데이터는 Firebase에 안전하게 저장되고, 접속한 모든 사람에게 실시간으로 공유돼요.</div>
 </div>
 
 <div class="overlay" id="overlay" style="display:none;">
@@ -698,10 +697,6 @@
         <option value="신규">신규</option>
         <option value="하자보수">하자보수</option>
       </select>
-    </div>
-    <div class="field">
-      <label for="inpTitle">고객 성함</label>
-      <input id="inpTitle" type="text" placeholder="예: 홍길동" maxlength="60">
     </div>
     <div class="field" style="display:flex; gap:10px;">
       <div style="flex:1;">
@@ -741,17 +736,6 @@
         <button type="button" id="openCostModalBtn" class="today-btn" style="white-space:nowrap;">입력/수정</button>
       </div>
     </div>
-    <div class="field">
-      <label for="inpRemind">알림</label>
-      <select id="inpRemind">
-        <option value="0">알림 없음</option>
-        <option value="5">5분 전</option>
-        <option value="10">10분 전</option>
-        <option value="30">30분 전</option>
-        <option value="60">1시간 전</option>
-        <option value="1440">1일 전</option>
-      </select>
-    </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="modalCancel">취소</button>
       <button class="btn-save" id="modalSave">저장</button>
@@ -784,6 +768,41 @@
   </div>
 </div>
 
+<div class="overlay" id="costSummaryOverlay" style="display:none;">
+  <div class="modal" style="max-width:400px;">
+    <button type="button" class="modal-close-x" id="costSummaryCloseX">×</button>
+    <h3 style="margin-bottom:16px;">월별 비용</h3>
+
+    <div class="cal-nav" style="margin-bottom:14px;">
+      <div class="cal-month"><span id="costSummaryMonthLabel"></span><span class="yr" id="costSummaryYearLabel"></span></div>
+      <div class="nav-btns">
+        <button class="icon-btn" id="costSummaryPrevBtn">‹</button>
+        <button class="icon-btn" id="costSummaryNextBtn">›</button>
+      </div>
+    </div>
+
+    <div style="background:var(--accent-soft); border-radius:12px; padding:16px; text-align:center; margin-bottom:14px;">
+      <div style="font-size:12px; color:var(--ink-soft);">이 달 총 비용</div>
+      <div id="costSummaryTotal" class="mono" style="font-size:26px; font-weight:800; color:var(--accent-deep); margin-top:4px;">0원</div>
+      <div id="costSummaryCount" style="font-size:11.5px; color:var(--ink-faint); margin-top:4px;">0건</div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <div style="flex:1; border:1px solid var(--border); border-radius:9px; padding:10px; text-align:center;">
+        <div style="font-size:11px; color:var(--ink-soft);">신규</div>
+        <div id="costSummaryNew" class="mono" style="font-size:14px; font-weight:700; color:var(--accent-deep); margin-top:2px;">0원</div>
+      </div>
+      <div style="flex:1; border:1px solid var(--border); border-radius:9px; padding:10px; text-align:center;">
+        <div style="font-size:11px; color:var(--ink-soft);">하자보수</div>
+        <div id="costSummaryRepair" class="mono" style="font-size:14px; font-weight:700; color:var(--reminder); margin-top:2px;">0원</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px; color:var(--ink-faint); margin-bottom:6px;">이 달 등록 내역</div>
+    <div id="costSummaryList" style="max-height:220px; overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="overlay" id="detailOverlay" style="display:none;">
   <div class="modal" style="max-width:380px;">
     <button type="button" class="modal-close-x" id="detailCloseX">×</button>
@@ -800,10 +819,6 @@
       <div>
         <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">비용 정보</div>
         <div id="detailCost" style="font-size:13.5px; color:var(--ink);">-</div>
-      </div>
-      <div>
-        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">알림</div>
-        <div id="detailRemind" style="font-size:13.5px; color:var(--ink);">-</div>
       </div>
       <div>
         <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">등록자</div>
@@ -1042,7 +1057,7 @@
     document.getElementById('nameOverlay').style.display = 'flex';
   }
 
-  let data = { events: {} }; // { "YYYY-MM-DD": [{id,title,start,end,location,attendees,remind,notified,createdBy}] }
+  let data = { events: {} }; // { "YYYY-MM-DD": [{id,category,title,start,end,location,matQty,installFee,totalCost,createdBy}] }
   let viewDate = new Date();
   let selectedDate = new Date();
 
@@ -1134,7 +1149,7 @@
         dots.className = 'cell-dots';
         evs.slice(0,4).forEach(ev=>{
           const d = document.createElement('div');
-          d.className = 'dot' + (ev.remind && ev.remind !== '0' ? ' reminder' : '');
+          d.className = 'dot';
           dots.appendChild(d);
         });
         cell.appendChild(dots);
@@ -1188,7 +1203,6 @@
         <div class="event-time mono">${timeRange}</div>
         <div class="event-body">
           <div class="event-title">${ev.category ? `<span class="mono" style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; margin-right:6px; ${ev.category === '하자보수' ? 'background:var(--reminder-soft); color:var(--reminder);' : 'background:var(--accent-soft); color:var(--accent-deep);'}">${escapeHtml(ev.category)}</span>` : ''}${escapeHtml(ev.title)}</div>
-          ${ev.remind && ev.remind !== '0' ? `<div class="event-remind">${remindLabel(ev.remind)} 알림</div>` : ''}
           ${ev.createdBy ? `<div class="event-attendees" style="color:var(--ink-faint);">${escapeHtml(ev.createdBy)}님이 등록</div>` : ''}
           ${(ev.matQty || ev.installFee) ? `<div class="event-attendees" style="color:var(--ink-soft);">🧱 매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b></div>` : ''}
           ${ev.location ? `<button class="event-loc-btn" data-id="${ev.id}">📍 ${escapeHtml(ev.location)}</button><div class="event-map" id="map-${ev.id}" style="display:none;"></div>` : ''}
@@ -1234,13 +1248,6 @@
     });
   }
 
-  function remindLabel(minutes){
-    minutes = parseInt(minutes,10);
-    if(minutes === 1440) return '1일 전';
-    if(minutes === 60) return '1시간 전';
-    return `${minutes}분 전`;
-  }
-
   function escapeHtml(str){
     const div = document.createElement('div');
     div.textContent = str;
@@ -1271,6 +1278,76 @@
       list.appendChild(item);
     });
   }
+
+  // ---- 월별 비용 요약 ----
+  let costSummaryMonth = new Date();
+  const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  function renderCostSummary(){
+    const y = costSummaryMonth.getFullYear();
+    const m = costSummaryMonth.getMonth();
+    document.getElementById('costSummaryMonthLabel').textContent = MONTH_NAMES[m];
+    document.getElementById('costSummaryYearLabel').textContent = y;
+
+    let total = 0, newTotal = 0, repairTotal = 0, count = 0;
+    const items = [];
+    for(const key in data.events){
+      const parts = key.split('-').map(Number);
+      if(parts[0] === y && (parts[1]-1) === m){
+        data.events[key].forEach(ev=>{
+          const cost = Number(ev.totalCost || 0);
+          total += cost;
+          count++;
+          if(ev.category === '하자보수') repairTotal += cost; else newTotal += cost;
+          items.push({...ev, dateKey:key});
+        });
+      }
+    }
+
+    document.getElementById('costSummaryTotal').textContent = total.toLocaleString('ko-KR') + '원';
+    document.getElementById('costSummaryCount').textContent = count + '건';
+    document.getElementById('costSummaryNew').textContent = newTotal.toLocaleString('ko-KR') + '원';
+    document.getElementById('costSummaryRepair').textContent = repairTotal.toLocaleString('ko-KR') + '원';
+
+    items.sort((a,b)=> a.dateKey.localeCompare(b.dateKey) || a.start.localeCompare(b.start));
+    const listEl = document.getElementById('costSummaryList');
+    listEl.innerHTML = '';
+    if(items.length === 0){
+      listEl.innerHTML = '<div class="empty-msg">이 달에 등록된 일정이 없어요.</div>';
+      return;
+    }
+    items.forEach(ev=>{
+      const d = ev.dateKey.split('-');
+      const row = document.createElement('div');
+      row.className = 'upcoming-item';
+      row.innerHTML = `
+        <div class="upcoming-item-main">
+          <span class="upcoming-name">${escapeHtml(ev.location || ev.category || '일정')}</span>
+          <span class="upcoming-loc">${parseInt(d[1],10)}/${parseInt(d[2],10)} · ${escapeHtml(ev.category || '')}</span>
+        </div>
+        <span class="upcoming-date">${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</span>
+      `;
+      row.addEventListener('click', ()=> openDetailView(ev));
+      listEl.appendChild(row);
+    });
+  }
+
+  document.getElementById('openCostSummaryBtn').addEventListener('click', ()=>{
+    costSummaryMonth = new Date();
+    renderCostSummary();
+    document.getElementById('costSummaryOverlay').style.display = 'flex';
+  });
+  document.getElementById('costSummaryCloseX').addEventListener('click', ()=>{
+    document.getElementById('costSummaryOverlay').style.display = 'none';
+  });
+  document.getElementById('costSummaryPrevBtn').addEventListener('click', ()=>{
+    costSummaryMonth = new Date(costSummaryMonth.getFullYear(), costSummaryMonth.getMonth()-1, 1);
+    renderCostSummary();
+  });
+  document.getElementById('costSummaryNextBtn').addEventListener('click', ()=>{
+    costSummaryMonth = new Date(costSummaryMonth.getFullYear(), costSummaryMonth.getMonth()+1, 1);
+    renderCostSummary();
+  });
 
   function updateCountdown(){
     const now = new Date();
@@ -1417,7 +1494,6 @@
     document.getElementById('modalTitle').textContent = '일정 추가';
     document.getElementById('modalSave').textContent = '저장';
     document.getElementById('inpCategory').value = '';
-    document.getElementById('inpTitle').value = '';
     document.getElementById('inpStart').value = '09:00';
     document.getElementById('inpEnd').value = '10:00';
     syncEndMin();
@@ -1429,10 +1505,9 @@
     currentMatQty = 0;
     currentInstallFee = 150000;
     updateCostSummaryLine();
-    document.getElementById('inpRemind').value = '0';
     document.getElementById('modalMap').innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
     overlay.style.display = 'flex';
-    setTimeout(()=>document.getElementById('inpTitle').focus(), 50);
+    setTimeout(()=>document.getElementById('inpCategory').focus(), 50);
   }
 
   function openModalForEdit(ev){
@@ -1440,7 +1515,6 @@
     document.getElementById('modalTitle').textContent = '일정 수정';
     document.getElementById('modalSave').textContent = '수정 완료';
     document.getElementById('inpCategory').value = ev.category || '';
-    document.getElementById('inpTitle').value = ev.title;
     document.getElementById('inpStart').value = ev.start;
     document.getElementById('inpEnd').value = ev.end || '';
     syncEndMin();
@@ -1452,7 +1526,6 @@
     currentMatQty = ev.matQty != null ? ev.matQty : 0;
     currentInstallFee = ev.installFee != null ? ev.installFee : 150000;
     updateCostSummaryLine();
-    document.getElementById('inpRemind').value = ev.remind || '0';
     const mapEl = document.getElementById('modalMap');
     if(ev.location){
       const q = encodeURIComponent(ev.location);
@@ -1461,7 +1534,7 @@
       mapEl.innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
     }
     overlay.style.display = 'flex';
-    setTimeout(()=>document.getElementById('inpTitle').focus(), 50);
+    setTimeout(()=>document.getElementById('inpCategory').focus(), 50);
   }
 
   document.getElementById('addBtn').addEventListener('click', resetModalForAdd);
@@ -1510,7 +1583,6 @@
       costEl.textContent = '등록된 비용 정보가 없어요';
     }
 
-    document.getElementById('detailRemind').textContent = (ev.remind && ev.remind !== '0') ? remindLabel(ev.remind) + ' 알림' : '알림 없음';
     document.getElementById('detailCreatedBy').textContent = ev.createdBy || '-';
     document.getElementById('detailEditBtn').style.display = (ev.createdBy === myName) ? 'block' : 'none';
     document.getElementById('detailOverlay').style.display = 'flex';
@@ -1601,17 +1673,12 @@
       alert('구분(신규/하자보수)을 선택해주세요.');
       return;
     }
-    const title = document.getElementById('inpTitle').value.trim();
-    if(!title){
-      document.getElementById('inpTitle').focus();
-      return;
-    }
     const start = document.getElementById('inpStart').value || '09:00';
     const end = document.getElementById('inpEnd').value || '';
     const location = document.getElementById('inpLocation').value.trim();
     const locationDetail = document.getElementById('inpLocationDetail').value.trim();
     const fullLocation = locationDetail ? `${location} ${locationDetail}` : location;
-    const remind = document.getElementById('inpRemind').value;
+    const title = fullLocation || category;
     const matQty = currentMatQty;
     const installFee = currentInstallFee;
     const totalCost = matQty * MAT_UNIT_PRICE + installFee;
@@ -1622,13 +1689,13 @@
     try{
       if(editingId){
         await updateEventDoc(editingId, {
-          category, title, start, end, location: fullLocation, remind,
+          category, title, start, end, location: fullLocation,
           matQty, installFee, totalCost
         });
       }else{
         await addEventDoc({
           dateKey: key,
-          category, title, start, end, location: fullLocation, remind,
+          category, title, start, end, location: fullLocation,
           matQty, installFee, totalCost,
           createdBy: myName
         });
