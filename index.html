@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>일정관리</title>
+<title>비용관리</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -21,11 +20,11 @@
     --accent:#3D5A80;
     --accent-soft:#EAF0F7;
     --accent-deep:#2C4560;
-    --reminder:#E8734A;
-    --reminder-soft:#FCEBE3;
+    --danger:#C6595F;
+    --profit:#2E7D5B;
+    --expense:#B4562B;
     --radius-lg:16px;
     --radius-md:10px;
-    --radius-sm:7px;
     --shadow-card:0 1px 2px rgba(23,26,33,0.04);
     --shadow-pop:0 12px 32px rgba(23,26,33,0.12), 0 2px 8px rgba(23,26,33,0.06);
   }
@@ -38,248 +37,144 @@
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
   }
-  .app{
-    max-width:960px;
-    margin:0 auto;
-    padding:28px 20px 60px;
-  }
   .mono{font-family:'IBM Plex Mono',monospace;}
+  .app{
+    max-width:640px;
+    margin:0 auto;
+    padding:24px 18px 50px;
+  }
+  @media (max-width:520px){
+    .app{ padding:14px 8px 32px; }
+  }
 
-  /* ---------- Header ---------- */
+  /* topbar */
   .topbar{
     display:flex;
     align-items:flex-start;
     justify-content:space-between;
-    margin-bottom:22px;
-    gap:16px;
-    flex-wrap:wrap;
+    margin-bottom:18px;
+    gap:12px;
   }
   .brand{
     font-family:'Manrope',sans-serif;
     font-weight:800;
-    font-size:22px;
+    font-size:27px;
     letter-spacing:-0.02em;
   }
-  .countdown-wrap{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-md);
-    padding:10px 16px;
-    box-shadow:var(--shadow-card);
-    min-width:220px;
-    flex:1 1 220px;
-    max-width:100%;
-  }
-  .countdown-label{
-    font-size:11px;
+  #userBadge{
+    font-size:14px;
     color:var(--ink-faint);
-    margin-bottom:2px;
+    margin-top:4px;
   }
-  .countdown-title{
-    font-size:13px;
-    font-weight:500;
-    margin-bottom:4px;
-    color:var(--ink);
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    max-width:100%;
-  }
-  .countdown-time{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:20px;
-    font-weight:600;
-    color:var(--accent);
-    letter-spacing:0.02em;
-  }
-  .countdown-time.pulse{
-    animation:pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse{
-    0%,100%{opacity:1;}
-    50%{opacity:0.55;}
-  }
-
-  /* ---------- Layout ---------- */
-  .layout{
-    display:flex;
-    flex-direction:column;
-    gap:20px;
-    max-width:640px;
-    margin:0 auto;
-  }
-  @media (max-width:520px){
-    .app{ padding:14px 8px 32px; }
-    .brand{ font-size:19px; }
-    .topbar{ margin-bottom:14px; gap:10px; }
-    .countdown-wrap{ padding:9px 12px; min-width:0; flex-basis:100%; }
-    .countdown-time{ font-size:18px; }
-    .cal-card{ padding:12px 8px 6px; border-radius:12px; }
-    .cal-month{ font-size:17px; }
-    .side-card{ padding:12px; border-radius:12px; }
-    .side{ gap:12px; }
-    .layout{ gap:12px; }
-    .weekdays div{ font-size:10.5px; }
-    .cell{ padding:5px 3px; border-radius:7px; height:40px; }
-    .cell-date{ font-size:11.5px; }
-    .dot{ width:4px; height:4px; }
-    .cell-count{ font-size:9px; bottom:4px; right:5px; }
-    .grid{ border-spacing:2px; }
-    .modal{ padding:18px 16px; max-width:100%; }
-    .overlay{ padding:10px; }
-    .icon-btn{ width:34px; height:34px; }
-    .today-btn{ height:34px; }
-    .hero-card{ padding:16px 14px; }
-    .hero-day-title{ font-size:20px; }
-  }
-
-  /* ---------- Today hero card ---------- */
-  .hero-card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:20px 18px;
-    box-shadow:var(--shadow-card);
-  }
-  .hero-nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    margin-bottom:14px;
-  }
-  .hero-nav .icon-btn{
-    width:42px;
-    height:42px;
-    font-size:19px;
-    flex-shrink:0;
-  }
-  .hero-day-title{
-    font-family:'Manrope',sans-serif;
-    font-weight:800;
-    font-size:23px;
-    text-align:center;
-    letter-spacing:-0.01em;
-  }
-  .hero-day-date{
-    font-size:13.5px;
-    color:var(--ink-faint);
-    text-align:center;
-    margin-top:2px;
-  }
-  .hero-card .event-item{ padding:15px 8px; }
-  .hero-card .event-time{ font-size:16px; min-width:64px; }
-  .hero-card .event-title{ font-size:17.5px; font-weight:600; line-height:1.4; }
-  .hero-card .event-attendees{ font-size:12.5px; margin-top:4px; }
-  .hero-card .event-loc-btn{ font-size:12.5px; margin-top:5px; }
-  .hero-card .event-del{ font-size:19px; padding:4px 6px; }
-  .hero-card .empty-msg{
+  #configBanner{
+    display:none;
+    background:#FCEBE3;
+    border:1px solid #E8734A;
+    color:#8A3F1E;
+    border-radius:10px;
+    padding:12px 16px;
     font-size:14.5px;
-    text-align:center;
-    padding:26px 0;
+    margin-bottom:16px;
     line-height:1.6;
   }
-  .hero-card .add-btn{
-    font-size:16px;
-    padding:15px 0;
-    margin-top:16px;
-    border-radius:11px;
-  }
-  .cal-toggle-btn{
-    width:100%;
-    margin-top:10px;
-    background:var(--surface-alt);
-    color:var(--ink-soft);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 0;
-    font-size:14px;
-    font-weight:600;
-    font-family:'IBM Plex Sans KR',sans-serif;
-    cursor:pointer;
-    transition:background .15s;
-  }
-  .cal-toggle-btn:hover{ background:var(--border); }
 
-  /* ---------- Calendar card ---------- */
+  /* calendar card */
   .cal-card{
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:var(--radius-lg);
-    padding:18px 18px 10px;
+    padding:18px 18px 12px;
     box-shadow:var(--shadow-card);
     overflow-x:hidden;
     box-sizing:border-box;
     width:100%;
   }
+  @media (max-width:520px){
+    .cal-card{ padding:12px 8px 8px; border-radius:12px; }
+  }
   .cal-nav{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin-bottom:14px;
+    margin-bottom:12px;
   }
   .cal-month{
     font-family:'Manrope',sans-serif;
     font-weight:700;
-    font-size:19px;
+    font-size:25px;
     letter-spacing:-0.01em;
   }
   .cal-month .yr{
     color:var(--ink-faint);
     font-weight:500;
-    font-size:15px;
+    font-size:19px;
     margin-left:6px;
   }
-  .nav-btns{display:flex;gap:6px;align-items:center;}
+  .nav-btns{display:flex;gap:8px;align-items:center;}
   .icon-btn{
-    width:32px;height:32px;
-    border-radius:8px;
+    width:42px;height:42px;
+    border-radius:9px;
     border:1px solid var(--border);
     background:var(--surface);
     color:var(--ink-soft);
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;
-    font-size:15px;
-    transition:background .15s, color .15s;
+    font-size:19px;
   }
   .icon-btn:hover{background:var(--surface-alt); color:var(--ink);}
-  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{
-    outline:2px solid var(--accent);
-    outline-offset:2px;
-  }
   .today-btn{
-    font-family:'IBM Plex Sans KR',sans-serif;
-    font-size:12.5px;
-    font-weight:500;
+    font-size:15.5px;
+    font-weight:600;
     border:1px solid var(--border);
     background:var(--surface);
-    border-radius:8px;
-    padding:0 12px;
-    height:32px;
+    border-radius:9px;
+    padding:0 16px;
+    height:42px;
     cursor:pointer;
     color:var(--ink-soft);
+    font-family:'IBM Plex Sans KR',sans-serif;
   }
   .today-btn:hover{background:var(--surface-alt); color:var(--ink);}
 
-  .weekdays{
-    display:block;
-    margin-bottom:4px;
-    width:100%;
-    box-sizing:border-box;
+  .month-total-bar{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--accent-soft);
+    border-radius:11px;
+    padding:14px 16px;
   }
-  .weekdays-row{
-    display:table;
-    width:100%;
-    table-layout:fixed;
+  .month-stat{ min-width:0; }
+  .month-total-label{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    white-space:nowrap;
   }
+  .month-total-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:23px;
+    font-weight:800;
+    color:var(--accent-deep);
+    margin-top:3px;
+  }
+  @media (max-width:400px){
+    .month-total-value{ font-size:19px; }
+  }
+  .month-total-count{
+    font-size:13px;
+    color:var(--ink-faint);
+  }
+
+  .weekdays{ display:block; margin-bottom:4px; width:100%; }
+  .weekdays-row{ display:table; width:100%; table-layout:fixed; }
   .weekdays-row div{
     display:table-cell;
     text-align:center;
-    font-size:11.5px;
+    font-size:14.5px;
     color:var(--ink-faint);
-    padding-bottom:8px;
-    font-weight:500;
-    overflow:hidden;
+    padding-bottom:10px;
+    font-weight:600;
   }
   .weekdays-row div:first-child{color:#C6595F;}
   .weekdays-row div:last-child{color:#3D6FA3;}
@@ -290,260 +185,72 @@
     table-layout:fixed;
     border-collapse:separate;
     border-spacing:4px;
-    box-sizing:border-box;
   }
-  .grid-row{
-    display:table-row;
+  @media (max-width:520px){
+    .grid{ border-spacing:2px; }
   }
+  .grid-row{ display:table-row; }
   .cell{
     display:table-cell;
     position:relative;
-    height:48px;
+    height:72px;
     vertical-align:top;
     border-radius:9px;
-    padding:7px 6px;
+    padding:8px 6px;
     cursor:pointer;
     border:1px solid transparent;
     transition:background .12s, border-color .12s;
-    box-sizing:border-box;
     overflow:hidden;
+  }
+  @media (max-width:520px){
+    .cell{ height:58px; padding:6px 3px; border-radius:7px; }
   }
   .cell:hover{background:var(--surface-alt);}
-  .cell.other-month{opacity:0.32;}
-  .cell.selected{
-    background:var(--accent-soft);
-    border-color:var(--accent);
-  }
-  .cell.is-today{
-    background:#FBF3E7;
-  }
-  .cell.selected.is-today{
-    background:#FBF3E7;
-    border-color:var(--accent);
-  }
+  .cell.other-month{opacity:0.3;}
+  .cell.is-today{ background:#FBF3E7; }
+  .cell.is-today .cell-date{ color:#96712F; font-weight:700; }
   .cell-date{
     font-family:'IBM Plex Mono',monospace;
-    font-size:12.5px;
-    font-weight:500;
+    font-size:16px;
+    font-weight:600;
     color:var(--ink-soft);
   }
-  .cell.selected .cell-date{color:var(--accent-deep); font-weight:600;}
-  .cell.is-today .cell-date{color:#96712F; font-weight:700;}
-  .cell.selected.is-today .cell-date{color:#96712F;}
-  .cell-dots{
-    display:flex;
-    gap:3px;
-    flex-wrap:wrap;
-    margin-top:6px;
-  }
-  .dot{
-    width:5px;height:5px;
-    border-radius:50%;
-    background:var(--accent);
-  }
-  .cell-count{
-    position:absolute;
-    bottom:6px;
-    right:7px;
+  .cell-cost{
     font-family:'IBM Plex Mono',monospace;
-    font-size:10px;
-    color:var(--ink-faint);
-  }
-
-  /* ---------- Sidebar ---------- */
-  .side{display:flex;flex-direction:column;gap:16px;}
-  .side-card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:16px;
-    box-shadow:var(--shadow-card);
-  }
-  .side-title{
-    font-family:'Manrope',sans-serif;
+    font-size:12.5px;
     font-weight:700;
-    font-size:14px;
-    margin-bottom:12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+    color:var(--accent-deep);
+    margin-top:5px;
+    line-height:1.3;
+    word-break:break-all;
+  }
+  @media (max-width:520px){
+    .cell-date{ font-size:13px; }
+    .cell-cost{ font-size:10px; margin-top:3px; }
   }
 
-  .event-item{
-    display:flex;
-    gap:10px;
-    padding:9px 8px;
-    margin:0 -8px;
-    border-bottom:1px solid var(--border);
-    align-items:flex-start;
-    cursor:pointer;
-    border-radius:6px;
-    transition:background .12s;
-  }
-  .event-item:hover{background:var(--surface-alt);}
-  .event-item:last-child{border-bottom:none;}
-  .event-time{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    color:var(--accent);
-    font-weight:600;
-    min-width:44px;
-    padding-top:1px;
-  }
-  .event-body{flex:1; min-width:0;}
-  .event-title{
-    font-size:13.5px;
-    font-weight:500;
-    color:var(--ink);
-    word-break:break-word;
-  }
-  .event-attendees{
-    font-size:11px;
-    color:var(--ink-soft);
-    margin-top:3px;
-  }
-  .event-loc-btn{
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-    background:none;
-    border:none;
-    padding:0;
-    margin-top:3px;
-    font-size:11px;
-    color:var(--ink-soft);
-    cursor:pointer;
-    text-decoration:none;
-  }
-  .event-loc-btn:hover{color:var(--accent);}
-  .event-map{
-    margin-top:8px;
-    border-radius:8px;
-    overflow:hidden;
-    border:1px solid var(--border);
-    height:150px;
-  }
-  .event-map iframe{
-    width:100%;
-    height:100%;
-    border:0;
-    display:block;
-  }
-  .modal-map{
-    margin-top:8px;
-    border-radius:8px;
-    overflow:hidden;
-    border:1px solid var(--border);
-    height:140px;
-    background:var(--surface-alt);
-  }
-  .modal-map iframe{
-    width:100%;
-    height:100%;
-    border:0;
-    display:block;
-  }
-  .map-msg{
-    height:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:8px;
-    font-size:11.5px;
-    color:var(--ink-faint);
-    line-height:1.5;
-  }
-  .event-del{
-    background:none;
-    border:none;
-    color:var(--ink-faint);
-    cursor:pointer;
-    font-size:15px;
-    line-height:1;
-    padding:2px 4px;
-  }
-  .event-del:hover{color:#C6595F;}
-  .empty-msg{
-    font-size:12.5px;
-    color:var(--ink-faint);
-    padding:6px 0 2px;
-    line-height:1.6;
-  }
-
-  .add-btn{
-    width:100%;
-    margin-top:10px;
-    background:var(--accent);
-    color:#fff;
-    border:none;
-    border-radius:9px;
-    padding:9px 0;
+  .footnote{
     font-size:13px;
-    font-weight:600;
-    font-family:'IBM Plex Sans KR',sans-serif;
-    cursor:pointer;
-    transition:background .15s;
-  }
-  .add-btn:hover{background:var(--accent-deep);}
-
-  .upcoming-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:10px;
-    padding:10px 8px;
-    margin:0 -8px;
-    border-bottom:1px solid var(--border);
-    font-size:12.5px;
-    cursor:pointer;
-    border-radius:6px;
-    transition:background .12s;
-  }
-  .upcoming-item:hover{background:var(--surface-alt);}
-  .upcoming-item:last-child{border-bottom:none;}
-  .upcoming-item-main{
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-    min-width:0;
-  }
-  .upcoming-name{
-    font-weight:600;
-    color:var(--ink);
-    font-size:13.5px;
-  }
-  .upcoming-loc{
-    font-size:11.5px;
-    color:var(--ink-soft);
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    max-width:190px;
-  }
-  .upcoming-loc-empty{color:var(--ink-faint);}
-  .upcoming-date{
-    font-family:'IBM Plex Mono',monospace;
     color:var(--ink-faint);
-    font-size:11px;
-    flex-shrink:0;
-    padding-top:2px;
+    text-align:center;
+    margin-top:22px;
+    line-height:1.7;
   }
 
-  /* ---------- Modal ---------- */
+  /* overlay / modal */
   .overlay{
     position:fixed; inset:0;
     background:rgba(23,26,33,0.32);
     display:flex; align-items:center; justify-content:center;
     z-index:50;
-    padding:20px;
+    padding:16px;
   }
   .modal{
     background:var(--surface);
     border-radius:var(--radius-lg);
     box-shadow:var(--shadow-pop);
     width:100%;
-    max-width:360px;
+    max-width:420px;
     padding:22px;
     max-height:88vh;
     overflow-y:auto;
@@ -551,309 +258,252 @@
   }
   .modal-close-x{
     position:absolute;
-    top:14px;
-    right:14px;
-    width:30px;
-    height:30px;
+    top:14px; right:14px;
+    width:38px;height:38px;
     border-radius:50%;
     border:none;
     background:var(--surface-alt);
     color:var(--ink-soft);
-    font-size:16px;
-    line-height:1;
+    font-size:20px;
     cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:5;
+    display:flex; align-items:center; justify-content:center;
   }
   .modal-close-x:hover{background:var(--border); color:var(--ink);}
   .modal h3{
     font-family:'Manrope',sans-serif;
-    font-size:16px;
-    margin:0 0 16px;
+    font-size:21px;
+    margin:0 0 6px;
   }
-  .field{margin-bottom:14px;}
+  .modal-sub{
+    font-size:15px;
+    color:var(--ink-faint);
+    margin-bottom:18px;
+  }
+  .field{margin-bottom:16px;}
   .field label{
     display:block;
-    font-size:12px;
+    font-size:15px;
     color:var(--ink-soft);
-    margin-bottom:5px;
-    font-weight:500;
+    margin-bottom:7px;
+    font-weight:600;
   }
-  .field input, .field select{
+  .field input{
     width:100%;
     border:1px solid var(--border);
-    border-radius:8px;
-    padding:9px 10px;
-    font-size:13.5px;
+    border-radius:9px;
+    padding:13px 14px;
+    font-size:18px;
     font-family:'IBM Plex Sans KR',sans-serif;
     background:var(--surface);
     color:var(--ink);
   }
-  .modal-actions{
-    display:flex;
-    gap:8px;
-    margin-top:18px;
+  .mat-row{ display:flex; align-items:center; gap:10px; }
+  .mat-row input{ width:120px; flex-shrink:0; }
+  .mat-row span{ font-size:16px; color:var(--ink-soft); white-space:nowrap; }
+
+  .total-box{
+    background:var(--accent-soft);
+    border-radius:10px;
+    padding:14px 16px;
+    margin:18px 0 6px;
   }
+  .total-box-label{ font-size:14.5px; color:var(--ink-soft); }
+  .total-box-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:28px;
+    font-weight:800;
+    color:var(--accent-deep);
+    margin-top:3px;
+  }
+
+  .modal-actions{ display:flex; gap:10px; margin-top:20px; }
   .btn-cancel, .btn-save{
     flex:1;
-    border-radius:9px;
-    padding:10px 0;
-    font-size:13.5px;
-    font-weight:600;
+    border-radius:10px;
+    padding:14px 0;
+    font-size:17px;
+    font-weight:700;
     cursor:pointer;
     border:none;
+    font-family:'IBM Plex Sans KR',sans-serif;
   }
-  .btn-cancel{
-    background:var(--surface-alt);
-    color:var(--ink-soft);
-  }
-  .btn-save{
+  .btn-cancel{ background:var(--surface-alt); color:var(--ink-soft); }
+  .btn-save{ background:var(--accent); color:#fff; }
+  .btn-save:hover{background:var(--accent-deep);}
+  .btn-save:disabled{opacity:0.6; cursor:default;}
+
+  .add-btn{
+    width:100%;
     background:var(--accent);
     color:#fff;
+    border:none;
+    border-radius:11px;
+    padding:15px 0;
+    font-size:17px;
+    font-weight:700;
+    font-family:'IBM Plex Sans KR',sans-serif;
+    cursor:pointer;
   }
-  .btn-save:hover{background:var(--accent-deep);}
+  .add-btn:hover{background:var(--accent-deep);}
 
-  .footnote{
-    font-size:11px;
+  /* day entry list */
+  .entry-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    padding:14px 10px;
+    margin:0 -10px;
+    border-bottom:1px solid var(--border);
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .12s;
+  }
+  .entry-item:hover{background:var(--surface-alt);}
+  .entry-item:last-child{border-bottom:none;}
+  .entry-main{font-size:16px; color:var(--ink); line-height:1.5; font-weight:500;}
+  .entry-sub{font-size:13.5px; color:var(--ink-faint); margin-top:3px;}
+  .entry-total{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:17px;
+    font-weight:700;
+    color:var(--accent-deep);
+    white-space:nowrap;
+  }
+  .entry-del{
+    background:none; border:none; color:var(--ink-faint);
+    font-size:22px; cursor:pointer; padding:2px 6px; line-height:1;
+    margin-left:4px;
+  }
+  .entry-del:hover{color:var(--danger);}
+  .empty-msg{
+    font-size:16px;
     color:var(--ink-faint);
     text-align:center;
-    margin-top:26px;
+    padding:26px 0;
     line-height:1.6;
   }
 </style>
 </head>
 <body>
 <div class="app">
-  <div id="configBanner" style="display:none; background:#FCEBE3; border:1px solid #E8734A; color:#8A3F1E; border-radius:10px; padding:10px 14px; font-size:12.5px; margin-bottom:16px; line-height:1.6;"></div>
+  <div id="configBanner"></div>
   <div class="topbar">
     <div>
-      <div class="brand">일정관리</div>
-      <div id="userBadge" style="font-size:11.5px; color:var(--ink-faint); margin-top:2px;"></div>
-    </div>
-    <div class="countdown-wrap" id="countdownWrap">
-      <div class="countdown-label">다음 일정까지</div>
-      <div class="countdown-title" id="countdownTitle">예정된 일정이 없어요</div>
-      <div class="countdown-time mono" id="countdownTime">—</div>
+      <div class="brand">비용관리</div>
+      <div id="userBadge"></div>
     </div>
   </div>
 
-  <div class="layout single-col">
-    <div class="hero-card">
-      <div class="hero-nav">
-        <button class="icon-btn" id="prevDayBtn">‹</button>
-        <div>
-          <div class="hero-day-title" id="selDayTitle">오늘</div>
-          <div class="hero-day-date mono" id="selDayDate"></div>
-        </div>
-        <button class="icon-btn" id="nextDayBtn">›</button>
-      </div>
-      <div id="eventList"></div>
-      <button class="add-btn" id="addBtn">+ 일정 추가</button>
-      <button class="cal-toggle-btn" id="toggleCalBtn">📅 달력 크게 보기</button>
-    </div>
-
-    <div class="cal-card" id="calCard" style="display:none;">
-      <div class="cal-nav">
-        <div class="cal-month"><span id="monthLabel"></span><span class="yr" id="yearLabel"></span></div>
-        <div class="nav-btns">
-          <button class="today-btn" id="todayBtn">오늘</button>
-          <button class="icon-btn" id="prevBtn">‹</button>
-          <button class="icon-btn" id="nextBtn">›</button>
-        </div>
-      </div>
-      <div class="weekdays">
-        <div class="weekdays-row"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
-      </div>
-      <div class="grid" id="calGrid"></div>
-    </div>
-
-    <div class="side">
-      <div class="side-card">
-        <div class="side-title">다가오는 일정</div>
-        <div id="upcomingList"></div>
-      </div>
-
-      <div class="side-card">
-        <div class="side-title">월별 비용</div>
-        <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">월별로 등록된 매트/시공비 합계를 확인해요.</div>
-        <button type="button" class="add-btn" id="openCostSummaryBtn" style="margin-top:0;">💰 월별 비용 보기</button>
+  <div class="cal-card">
+    <div class="cal-nav">
+      <div class="cal-month"><span id="monthLabel"></span><span class="yr" id="yearLabel"></span></div>
+      <div class="nav-btns">
+        <button class="today-btn" id="todayBtn">오늘</button>
+        <button class="icon-btn" id="prevBtn">‹</button>
+        <button class="icon-btn" id="nextBtn">›</button>
       </div>
     </div>
+
+    <div class="month-total-bar">
+      <div class="month-stat">
+        <div class="month-total-label">이번 달 총 비용</div>
+        <div class="month-total-value mono" id="monthTotalValue">0원</div>
+      </div>
+      <div class="month-stat" style="text-align:right;">
+        <div class="month-total-label">이번 달 순이익</div>
+        <div class="month-total-value mono" id="monthNetProfitValue" style="color:var(--profit);">0원</div>
+      </div>
+    </div>
+    <div class="month-total-count" id="monthTotalCount" style="margin:-8px 0 16px; text-align:center;">0건</div>
+
+    <div class="weekdays">
+      <div class="weekdays-row"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+    </div>
+    <div class="grid" id="calGrid"></div>
   </div>
 
-  <div class="footnote">데이터는 Firebase에 안전하게 저장되고, 접속한 모든 사람에게 실시간으로 공유돼요.</div>
+  <div class="footnote">날짜를 누르면 그날의 비용을 등록하거나 확인할 수 있어요. 데이터는 Firebase에 저장되고 접속한 모든 사람에게 실시간으로 공유돼요.</div>
 </div>
 
-<div class="overlay" id="overlay" style="display:none;">
+<!-- 하루 상세: 등록된 비용 목록 + 추가 버튼 -->
+<div class="overlay" id="dayOverlay" style="display:none;">
   <div class="modal">
-    <button type="button" class="modal-close-x" id="modalCloseX">×</button>
-    <h3 id="modalTitle">일정 추가</h3>
-    <div class="field">
-      <label for="inpCategory">구분 <span style="color:var(--reminder); font-weight:600;">*</span></label>
-      <select id="inpCategory">
-        <option value="" disabled selected>선택해주세요</option>
-        <option value="신규">신규</option>
-        <option value="하자보수">하자보수</option>
-      </select>
-    </div>
-    <div class="field" style="display:flex; gap:10px;">
-      <div style="flex:1;">
-        <label for="inpStart">시작 시간</label>
-        <input id="inpStart" type="time" value="09:00">
-      </div>
-      <div style="flex:1;">
-        <label for="inpEnd">종료 시간</label>
-        <input id="inpEnd" type="time" value="10:00">
-      </div>
-    </div>
-    <div class="field">
-      <label for="inpLocation">위치 <span style="color:var(--ink-faint); font-weight:400;">(선택)</span></label>
-      <div style="display:flex; gap:6px;">
-        <input id="inpLocation" type="text" placeholder="주소 검색 또는 직접 입력" style="flex:1; min-width:0;">
-        <button type="button" id="addrSearchBtn" class="today-btn" style="white-space:nowrap; padding:0 14px; flex-shrink:0;">주소 검색</button>
-      </div>
-      <div id="addrSearchInlinePanel" style="display:none; margin-top:8px; border:1px solid var(--border); border-radius:9px; overflow:hidden;">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:var(--surface-alt); border-bottom:1px solid var(--border);">
-          <span style="font-size:11.5px; color:var(--ink-soft); font-weight:500;">주소를 검색해서 선택해주세요</span>
-          <button type="button" id="addrSearchCloseBtn" style="background:none; border:none; font-size:16px; line-height:1; cursor:pointer; color:var(--ink-soft); padding:2px 4px;">×</button>
-        </div>
-        <div id="addrSearchEmbedWrap" style="height:320px;"></div>
-      </div>
-      <input id="inpLocationDetail" type="text" placeholder="상세 주소 (예: 3층 302호)" maxlength="60" style="margin-top:6px; display:none;">
-      <div class="modal-map" id="modalMap">
-        <div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>
-      </div>
-    </div>
-    <div class="field">
-      <label>비용 정보</label>
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--border); border-radius:9px; padding:10px 12px;">
-        <div>
-          <div id="costSummaryText" class="mono" style="font-size:12px; color:var(--ink-soft);">매트 0장 · 시공비 150,000원</div>
-          <div id="costSummaryTotal" class="mono" style="font-size:15.5px; font-weight:700; color:var(--accent-deep); margin-top:2px;">합계 150,000원</div>
-        </div>
-        <button type="button" id="openCostModalBtn" class="today-btn" style="white-space:nowrap;">입력/수정</button>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="modalCancel">취소</button>
-      <button class="btn-save" id="modalSave">저장</button>
-    </div>
+    <button type="button" class="modal-close-x" id="dayCloseX">×</button>
+    <h3 id="dayTitle">-</h3>
+    <div class="modal-sub" id="daySubTotal">이 날 총 비용 0원</div>
+    <div id="dayEntryList"></div>
+    <button type="button" class="add-btn" id="dayAddBtn" style="margin-top:14px;">+ 비용 추가</button>
   </div>
 </div>
 
+<!-- 비용 추가/수정 -->
 <div class="overlay" id="costOverlay" style="display:none;">
   <div class="modal">
-    <h3>비용 입력</h3>
+    <button type="button" class="modal-close-x" id="costCloseX">×</button>
+    <h3 id="costModalTitle">비용 추가</h3>
+    <div class="modal-sub" id="costModalDate">-</div>
+
     <div class="field">
       <label for="inpMatQty">상상매트</label>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <input id="inpMatQty" type="number" min="0" step="1" value="0" style="width:90px;">
-        <span style="font-size:12.5px; color:var(--ink-soft); white-space:nowrap;">장 × 2,200원</span>
+      <div class="mat-row">
+        <input id="inpMatQty" type="number" min="0" step="1" value="0">
+        <span>장 × 2,200원</span>
       </div>
     </div>
     <div class="field">
       <label for="inpInstallFee">시공비</label>
       <input id="inpInstallFee" type="number" min="0" step="1000" value="150000">
     </div>
-    <div class="field" style="background:var(--accent-soft); border-radius:9px; padding:10px 12px; margin-bottom:0;">
-      <div style="font-size:11.5px; color:var(--ink-soft);">예상 총 비용</div>
-      <div id="totalCostDisplay" class="mono" style="font-size:19px; font-weight:700; color:var(--accent-deep);">150,000원</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="costModalCancel">취소</button>
-      <button class="btn-save" id="costModalConfirm">확인</button>
-    </div>
-  </div>
-</div>
 
-<div class="overlay" id="costSummaryOverlay" style="display:none;">
-  <div class="modal" style="max-width:400px;">
-    <button type="button" class="modal-close-x" id="costSummaryCloseX">×</button>
-    <h3 style="margin-bottom:16px;">월별 비용</h3>
-
-    <div class="cal-nav" style="margin-bottom:14px;">
-      <div class="cal-month"><span id="costSummaryMonthLabel"></span><span class="yr" id="costSummaryYearLabel"></span></div>
-      <div class="nav-btns">
-        <button class="icon-btn" id="costSummaryPrevBtn">‹</button>
-        <button class="icon-btn" id="costSummaryNextBtn">›</button>
-      </div>
+    <div class="total-box">
+      <div class="total-box-label">매출 합계</div>
+      <div class="total-box-value mono" id="costTotalDisplay">150,000원</div>
     </div>
 
-    <div style="background:var(--accent-soft); border-radius:12px; padding:16px; text-align:center; margin-bottom:14px;">
-      <div style="font-size:12px; color:var(--ink-soft);">이 달 총 비용</div>
-      <div id="costSummaryTotal" class="mono" style="font-size:26px; font-weight:800; color:var(--accent-deep); margin-top:4px;">0원</div>
-      <div id="costSummaryCount" style="font-size:11.5px; color:var(--ink-faint); margin-top:4px;">0건</div>
+    <div class="field" style="margin-top:18px;">
+      <label for="inpFuelCost">주유비</label>
+      <input id="inpFuelCost" type="number" min="0" step="1000" value="0">
+    </div>
+    <div class="field">
+      <label for="inpMiscCost">기타 부대비용</label>
+      <input id="inpMiscCost" type="number" min="0" step="1000" value="0">
     </div>
 
-    <div style="display:flex; gap:10px; margin-bottom:16px;">
-      <div style="flex:1; border:1px solid var(--border); border-radius:9px; padding:10px; text-align:center;">
-        <div style="font-size:11px; color:var(--ink-soft);">신규</div>
-        <div id="costSummaryNew" class="mono" style="font-size:14px; font-weight:700; color:var(--accent-deep); margin-top:2px;">0원</div>
-      </div>
-      <div style="flex:1; border:1px solid var(--border); border-radius:9px; padding:10px; text-align:center;">
-        <div style="font-size:11px; color:var(--ink-soft);">하자보수</div>
-        <div id="costSummaryRepair" class="mono" style="font-size:14px; font-weight:700; color:var(--reminder); margin-top:2px;">0원</div>
-      </div>
-    </div>
-
-    <div style="font-size:11px; color:var(--ink-faint); margin-bottom:6px;">이 달 등록 내역</div>
-    <div id="costSummaryList" style="max-height:220px; overflow-y:auto;"></div>
-  </div>
-</div>
-
-<div class="overlay" id="detailOverlay" style="display:none;">
-  <div class="modal" style="max-width:380px;">
-    <button type="button" class="modal-close-x" id="detailCloseX">×</button>
-    <div id="detailCategoryBadge" style="display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; margin-bottom:8px;"></div>
-    <h3 id="detailName" style="margin-bottom:2px;">-</h3>
-    <div id="detailDate" class="mono" style="font-size:12.5px; color:var(--ink-faint); margin-bottom:16px;"></div>
-
-    <div style="display:flex; flex-direction:column; gap:14px;">
-      <div>
-        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">위치</div>
-        <div id="detailLocation" style="font-size:13.5px; color:var(--ink);">-</div>
-        <div class="modal-map" id="detailMap" style="display:none; margin-top:8px;"></div>
-      </div>
-      <div>
-        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">비용 정보</div>
-        <div id="detailCost" style="font-size:13.5px; color:var(--ink);">-</div>
-      </div>
-      <div>
-        <div style="font-size:11px; color:var(--ink-faint); margin-bottom:3px;">등록자</div>
-        <div id="detailCreatedBy" style="font-size:13.5px; color:var(--ink);">-</div>
-      </div>
+    <div class="total-box" style="background:#EAF4EE;">
+      <div class="total-box-label">순이익 (매출 − 주유비 − 기타)</div>
+      <div class="total-box-value mono" id="netProfitDisplay" style="color:var(--profit);">150,000원</div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn-cancel" id="detailCloseBtn">닫기</button>
-      <button class="btn-save" id="detailEditBtn">수정</button>
+      <button class="btn-cancel" id="costCancelBtn">취소</button>
+      <button class="btn-save" id="costSaveBtn">저장</button>
     </div>
   </div>
 </div>
 
+<!-- 로그인 / 가입 -->
 <div class="overlay" id="nameOverlay" style="display:none;">
   <div class="modal" style="text-align:center;">
     <div id="loginView">
       <h3 style="margin-bottom:6px;">비밀번호 입력</h3>
-      <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">4자리 비밀번호를 입력해주세요</div>
-      <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:12px; padding:12px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
-      <div id="loginError" style="color:#C6595F; font-size:12px; margin-top:8px; min-height:16px;"></div>
+      <div class="modal-sub">4자리 비밀번호를 입력해주세요</div>
+      <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:30px; letter-spacing:14px; padding:14px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
+      <div id="loginError" style="color:var(--danger); font-size:14px; margin-top:8px; min-height:18px;"></div>
       <button type="button" id="loginSubmitBtn" class="add-btn" style="margin-top:10px;">입장하기</button>
-      <div style="margin-top:14px; font-size:12.5px;">
+      <div style="margin-top:16px; font-size:15px;">
         <a href="#" id="gotoSignupLink" style="color:var(--accent);">처음이세요? 가입하기</a>
       </div>
     </div>
     <div id="signupView" style="display:none;">
       <h3 style="margin-bottom:6px;">가입하기</h3>
-      <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:18px;">이름과 사용할 4자리 비밀번호를 정해주세요</div>
-      <div style="text-align:left; font-size:12px; color:var(--ink-soft); margin-bottom:5px; font-weight:500;">이름</div>
-      <input id="signupName" type="text" maxlength="20" style="width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; padding:11px; margin-bottom:10px; font-size:14px; font-family:'IBM Plex Sans KR',sans-serif;">
-      <input id="signupPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:12px; padding:12px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
-      <div id="signupError" style="color:#C6595F; font-size:12px; margin-top:8px; min-height:16px;"></div>
+      <div class="modal-sub">이름과 사용할 4자리 비밀번호를 정해주세요</div>
+      <div style="text-align:left; font-size:15px; color:var(--ink-soft); margin-bottom:6px; font-weight:600;">이름</div>
+      <input id="signupName" type="text" maxlength="20" style="width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; padding:13px; margin-bottom:12px; font-size:18px; font-family:'IBM Plex Sans KR',sans-serif;">
+      <input id="signupPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="text-align:center; font-size:30px; letter-spacing:14px; padding:14px; width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; font-family:'IBM Plex Mono',monospace;">
+      <div id="signupError" style="color:var(--danger); font-size:14px; margin-top:8px; min-height:18px;"></div>
       <button type="button" id="signupSubmitBtn" class="add-btn" style="margin-top:10px;">가입하고 시작하기</button>
-      <div style="margin-top:14px; font-size:12.5px;">
+      <div style="margin-top:16px; font-size:15px;">
         <a href="#" id="gotoLoginLink" style="color:var(--accent);">이미 가입했어요, 로그인</a>
       </div>
     </div>
@@ -863,8 +513,6 @@
 <script>
 (function(){
   // ===== Firebase 설정 =====
-  // 아래 값을 본인의 Firebase 프로젝트 설정으로 교체하세요.
-  // console.firebase.google.com > 프로젝트 설정 > 내 앱 > SDK 설정에서 확인 가능
   const firebaseConfig = {
     apiKey: "AIzaSyAMG9CVAYNponSWftSrTvaarvGcmipqSWg",
     authDomain: "scheduleapp-448f7.firebaseapp.com",
@@ -873,6 +521,7 @@
     messagingSenderId: "399466089160",
     appId: "1:399466089160:web:aa80f4762112eb7fb933fd"
   };
+  const MAT_UNIT_PRICE = 2200;
 
   let db = null;
   let fbReady = false;
@@ -882,29 +531,32 @@
     el.textContent = msg;
   }
   try{
-    if(firebaseConfig.apiKey === 'YOUR_API_KEY'){
-      throw new Error('설정값이 채워지지 않음');
-    }
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     fbReady = true;
   }catch(e){
     fbReady = false;
-    showConfigBanner('⚠️ Firebase 설정이 아직 안 되어 있어요. 코드 상단의 firebaseConfig 값을 본인의 Firebase 프로젝트 설정으로 채워주세요. 그 전까지는 일정이 저장/공유되지 않아요.');
+    showConfigBanner('⚠️ Firebase 연결에 실패했어요. 잠시 후 새로고침해주세요.');
   }
 
-  // ===== 사용자 로그인/가입 (이름 + 4자리 비밀번호) =====
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ===== 로그인 / 가입 =====
   let myName = '';
   let myMemberId = '';
   try{
-    myName = localStorage.getItem('scheduleAppUserName') || '';
-    myMemberId = localStorage.getItem('scheduleAppMemberId') || '';
+    myName = localStorage.getItem('costAppUserName') || '';
+    myMemberId = localStorage.getItem('costAppMemberId') || '';
   }catch(e){}
 
   function updateUserBadge(){
     const badge = document.getElementById('userBadge');
     if(myName){
-      badge.innerHTML = `${escapeHtml(myName)}님 · <a href="#" id="switchNameLink" style="color:var(--accent);">전환</a> · <a href="#" id="deleteAccountLink" style="color:#C6595F;">계정삭제</a>`;
+      badge.innerHTML = `${escapeHtml(myName)}님 · <a href="#" id="switchNameLink" style="color:var(--accent);">전환</a> · <a href="#" id="deleteAccountLink" style="color:var(--danger);">계정삭제</a>`;
       document.getElementById('switchNameLink').addEventListener('click', (e)=>{
         e.preventDefault();
         showLoginView();
@@ -930,8 +582,8 @@
       myName = '';
       myMemberId = '';
       try{
-        localStorage.removeItem('scheduleAppUserName');
-        localStorage.removeItem('scheduleAppMemberId');
+        localStorage.removeItem('costAppUserName');
+        localStorage.removeItem('costAppMemberId');
       }catch(e){}
       updateUserBadge();
       showLoginView();
@@ -957,14 +609,8 @@
     document.getElementById('signupPin').value = '';
     setTimeout(()=>document.getElementById('signupName').focus(), 50);
   }
-  document.getElementById('gotoSignupLink').addEventListener('click', (e)=>{
-    e.preventDefault();
-    showSignupView();
-  });
-  document.getElementById('gotoLoginLink').addEventListener('click', (e)=>{
-    e.preventDefault();
-    showLoginView();
-  });
+  document.getElementById('gotoSignupLink').addEventListener('click', (e)=>{ e.preventDefault(); showSignupView(); });
+  document.getElementById('gotoLoginLink').addEventListener('click', (e)=>{ e.preventDefault(); showLoginView(); });
 
   async function attemptLogin(){
     const pin = document.getElementById('loginPin').value.trim();
@@ -973,10 +619,7 @@
       errEl.textContent = '4자리 숫자를 입력해주세요.';
       return;
     }
-    if(!fbReady){
-      errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.';
-      return;
-    }
+    if(!fbReady){ errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.'; return; }
     errEl.textContent = '';
     try{
       const snap = await db.collection('members').where('pin','==',pin).limit(1).get();
@@ -987,8 +630,8 @@
       myName = snap.docs[0].data().name;
       myMemberId = snap.docs[0].id;
       try{
-        localStorage.setItem('scheduleAppUserName', myName);
-        localStorage.setItem('scheduleAppMemberId', myMemberId);
+        localStorage.setItem('costAppUserName', myName);
+        localStorage.setItem('costAppMemberId', myMemberId);
       }catch(e){}
       document.getElementById('nameOverlay').style.display = 'none';
       updateUserBadge();
@@ -998,26 +641,15 @@
     }
   }
   document.getElementById('loginSubmitBtn').addEventListener('click', attemptLogin);
-  document.getElementById('loginPin').addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter') attemptLogin();
-  });
+  document.getElementById('loginPin').addEventListener('keydown', (e)=>{ if(e.key==='Enter') attemptLogin(); });
 
   async function attemptSignup(){
     const name = document.getElementById('signupName').value.trim();
     const pin = document.getElementById('signupPin').value.trim();
     const errEl = document.getElementById('signupError');
-    if(!name){
-      errEl.textContent = '이름을 입력해주세요.';
-      return;
-    }
-    if(!/^\d{4}$/.test(pin)){
-      errEl.textContent = '비밀번호는 숫자 4자리여야 해요.';
-      return;
-    }
-    if(!fbReady){
-      errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.';
-      return;
-    }
+    if(!name){ errEl.textContent = '이름을 입력해주세요.'; return; }
+    if(!/^\d{4}$/.test(pin)){ errEl.textContent = '비밀번호는 숫자 4자리여야 해요.'; return; }
+    if(!fbReady){ errEl.textContent = 'Firebase 연결 후 이용할 수 있어요.'; return; }
     errEl.textContent = '';
     try{
       const dupSnap = await db.collection('members').where('pin','==',pin).limit(1).get();
@@ -1029,8 +661,8 @@
       myName = name;
       myMemberId = docRef.id;
       try{
-        localStorage.setItem('scheduleAppUserName', myName);
-        localStorage.setItem('scheduleAppMemberId', myMemberId);
+        localStorage.setItem('costAppUserName', myName);
+        localStorage.setItem('costAppMemberId', myMemberId);
       }catch(e){}
       document.getElementById('nameOverlay').style.display = 'none';
       updateUserBadge();
@@ -1040,9 +672,7 @@
     }
   }
   document.getElementById('signupSubmitBtn').addEventListener('click', attemptSignup);
-  document.getElementById('signupPin').addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter') attemptSignup();
-  });
+  document.getElementById('signupPin').addEventListener('keydown', (e)=>{ if(e.key==='Enter') attemptSignup(); });
 
   document.getElementById('nameOverlay').addEventListener('click', (e)=>{
     if(e.target.id === 'nameOverlay' && myName){
@@ -1057,9 +687,10 @@
     document.getElementById('nameOverlay').style.display = 'flex';
   }
 
-  let data = { events: {} }; // { "YYYY-MM-DD": [{id,category,title,start,end,location,matQty,installFee,totalCost,createdBy}] }
+  // ===== 상태 =====
+  let data = { events: {} }; // { "YYYY-MM-DD": [{id, matQty, installFee, totalCost, createdBy}] }
   let viewDate = new Date();
-  let selectedDate = new Date();
+  let selectedDateKey = '';
 
   const pad = n => String(n).padStart(2,'0');
   const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -1079,39 +710,58 @@
       render();
     }, err=>{
       console.error('Firestore 동기화 오류', err);
-      showConfigBanner('⚠️ Firestore에 연결하지 못했어요. Firestore Database를 만들었는지, 규칙이 읽기/쓰기를 허용하는지 확인해주세요.');
+      showConfigBanner('⚠️ Firestore에 연결하지 못했어요. Firestore Database와 보안 규칙을 확인해주세요.');
     });
   }
-
-  async function addEventDoc(ev){
+  async function addEntryDoc(entry){
     if(!fbReady) return;
-    await db.collection('events').add(ev);
+    await db.collection('events').add(entry);
   }
-  async function updateEventDoc(id, ev){
+  async function updateEntryDoc(id, entry){
     if(!fbReady) return;
-    await db.collection('events').doc(id).update(ev);
+    await db.collection('events').doc(id).update(entry);
   }
-  async function deleteEventDoc(id){
+  async function deleteEntryDoc(id){
     if(!fbReady) return;
     await db.collection('events').doc(id).delete();
   }
 
-  function allEventsSorted(){
-    const out = [];
-    for(const key in data.events){
-      for(const ev of data.events[key]){
-        out.push({...ev, dateKey:key, dt: new Date(`${key}T${ev.start}:00`)});
-      }
-    }
-    out.sort((a,b)=>a.dt-b.dt);
-    return out;
+  // ===== 달력 렌더링 =====
+  const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  function entryNetProfit(ev){
+    return Number(ev.totalCost||0) - Number(ev.fuelCost||0) - Number(ev.miscCost||0);
+  }
+  function dayTotal(key){
+    const evs = data.events[key] || [];
+    return evs.reduce((sum,ev)=> sum + Number(ev.totalCost||0), 0);
+  }
+  function dayNetProfit(key){
+    const evs = data.events[key] || [];
+    return evs.reduce((sum,ev)=> sum + entryNetProfit(ev), 0);
   }
 
   function renderCalendar(){
     const y = viewDate.getFullYear();
     const m = viewDate.getMonth();
-    document.getElementById('monthLabel').textContent = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'][m];
+    document.getElementById('monthLabel').textContent = MONTH_NAMES[m];
     document.getElementById('yearLabel').textContent = y;
+
+    // 이번 달 합계
+    let monthTotal = 0, monthNetProfit = 0, monthCount = 0;
+    for(const key in data.events){
+      const parts = key.split('-').map(Number);
+      if(parts[0] === y && (parts[1]-1) === m){
+        data.events[key].forEach(ev=>{
+          monthTotal += Number(ev.totalCost||0);
+          monthNetProfit += entryNetProfit(ev);
+          monthCount++;
+        });
+      }
+    }
+    document.getElementById('monthTotalValue').textContent = monthTotal.toLocaleString('ko-KR') + '원';
+    document.getElementById('monthNetProfitValue').textContent = monthNetProfit.toLocaleString('ko-KR') + '원';
+    document.getElementById('monthTotalCount').textContent = monthCount + '건';
 
     const firstDay = new Date(y, m, 1);
     const startOffset = firstDay.getDay();
@@ -1131,586 +781,180 @@
       const cellDate = new Date(gridStart);
       cellDate.setDate(gridStart.getDate()+i);
       const key = dateKey(cellDate);
-      const evs = data.events[key] || [];
+      const total = dayTotal(key);
 
       const cell = document.createElement('div');
       cell.className = 'cell';
       if(cellDate.getMonth() !== m) cell.classList.add('other-month');
       if(isSameDay(cellDate, today)) cell.classList.add('is-today');
-      if(isSameDay(cellDate, selectedDate)) cell.classList.add('selected');
 
       const dnum = document.createElement('div');
       dnum.className = 'cell-date';
       dnum.textContent = cellDate.getDate();
       cell.appendChild(dnum);
 
-      if(evs.length){
-        const dots = document.createElement('div');
-        dots.className = 'cell-dots';
-        evs.slice(0,4).forEach(ev=>{
-          const d = document.createElement('div');
-          d.className = 'dot';
-          dots.appendChild(d);
-        });
-        cell.appendChild(dots);
-        if(evs.length > 1){
-          const cnt = document.createElement('div');
-          cnt.className = 'cell-count';
-          cnt.textContent = evs.length;
-          cell.appendChild(cnt);
-        }
+      if(total > 0){
+        const costEl = document.createElement('div');
+        costEl.className = 'cell-cost';
+        costEl.textContent = total.toLocaleString('ko-KR')+'원';
+        cell.appendChild(costEl);
       }
 
-      cell.addEventListener('click', ()=>{
-        selectedDate = cellDate;
-        if(cellDate.getMonth() !== viewDate.getMonth()){
-          viewDate = new Date(cellDate.getFullYear(), cellDate.getMonth(), 1);
-        }
-        render();
-        collapseCalendar();
-        document.querySelector('.hero-card').scrollIntoView({behavior:'smooth', block:'start'});
-      });
-
+      cell.addEventListener('click', ()=> openDayOverlay(key, cellDate));
       rowEl.appendChild(cell);
     }
   }
 
-  function renderSideList(){
-    const today = new Date();
-    document.getElementById('selDayTitle').textContent = isSameDay(selectedDate, today)
-      ? '오늘'
-      : `${selectedDate.getMonth()+1}월 ${selectedDate.getDate()}일`;
-    document.getElementById('selDayDate').textContent =
-      `${['일','월','화','수','목','금','토'][selectedDate.getDay()]}요일`;
-
-    const key = dateKey(selectedDate);
-    const evs = (data.events[key] || []).slice().sort((a,b)=>a.start.localeCompare(b.start));
-    const list = document.getElementById('eventList');
-    list.innerHTML = '';
-
-    if(evs.length === 0){
-      const p = document.createElement('div');
-      p.className = 'empty-msg';
-      p.textContent = '이 날은 아직 비어 있어요. 일정을 추가해보세요.';
-      list.appendChild(p);
-    }
-
-    evs.forEach(ev=>{
-      const item = document.createElement('div');
-      item.className = 'event-item';
-      const timeRange = ev.end ? `${ev.start}–${ev.end}` : ev.start;
-      item.innerHTML = `
-        <div class="event-time mono">${timeRange}</div>
-        <div class="event-body">
-          <div class="event-title">${ev.category ? `<span class="mono" style="font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; margin-right:6px; ${ev.category === '하자보수' ? 'background:var(--reminder-soft); color:var(--reminder);' : 'background:var(--accent-soft); color:var(--accent-deep);'}">${escapeHtml(ev.category)}</span>` : ''}${escapeHtml(ev.title)}</div>
-          ${ev.createdBy ? `<div class="event-attendees" style="color:var(--ink-faint);">${escapeHtml(ev.createdBy)}님이 등록</div>` : ''}
-          ${(ev.matQty || ev.installFee) ? `<div class="event-attendees" style="color:var(--ink-soft);">🧱 매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b></div>` : ''}
-          ${ev.location ? `<button class="event-loc-btn" data-id="${ev.id}">📍 ${escapeHtml(ev.location)}</button><div class="event-map" id="map-${ev.id}" style="display:none;"></div>` : ''}
-        </div>
-        ${ev.createdBy === myName ? `<button class="event-del" data-id="${ev.id}" title="삭제">×</button>` : ''}
-      `;
-      item.addEventListener('click', ()=> openDetailView(ev));
-      list.appendChild(item);
-    });
-
-    list.querySelectorAll('.event-loc-btn').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        const mapEl = document.getElementById('map-'+id);
-        if(!mapEl) return;
-        const isOpen = mapEl.style.display === 'block';
-        if(isOpen){
-          mapEl.style.display = 'none';
-          mapEl.innerHTML = '';
-        }else{
-          const ev = (data.events[key]||[]).find(e=>e.id===id);
-          if(ev && ev.location){
-            const q = encodeURIComponent(ev.location);
-            mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-          }
-          mapEl.style.display = 'block';
-        }
-      });
-    });
-
-    list.querySelectorAll('.event-del').forEach(btn=>{
-      btn.addEventListener('click', async (e)=>{
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        if(!confirm('이 일정을 삭제할까요?')) return;
-        try{
-          await deleteEventDoc(id);
-        }catch(err){
-          alert('삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
-        }
-      });
-    });
-  }
-
-  function escapeHtml(str){
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  function renderUpcoming(){
-    const now = new Date();
-    const upcoming = allEventsSorted().filter(e=>e.dt >= now).slice(0,6);
-    const list = document.getElementById('upcomingList');
-    list.innerHTML = '';
-    if(upcoming.length === 0){
-      list.innerHTML = '<div class="empty-msg">다가오는 일정이 없어요.</div>';
-      return;
-    }
-    upcoming.forEach(ev=>{
-      const item = document.createElement('div');
-      item.className = 'upcoming-item';
-      const md = `${ev.dt.getMonth()+1}/${ev.dt.getDate()}`;
-      item.innerHTML = `
-        <div class="upcoming-item-main">
-          <span class="upcoming-name">${escapeHtml(ev.title)}</span>
-          ${ev.location ? `<span class="upcoming-loc">📍 ${escapeHtml(ev.location)}</span>` : '<span class="upcoming-loc upcoming-loc-empty">위치 미등록</span>'}
-        </div>
-        <span class="upcoming-date">${md} ${ev.start}</span>
-      `;
-      item.addEventListener('click', ()=> openDetailView(ev));
-      list.appendChild(item);
-    });
-  }
-
-  // ---- 월별 비용 요약 ----
-  let costSummaryMonth = new Date();
-  const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-
-  function renderCostSummary(){
-    const y = costSummaryMonth.getFullYear();
-    const m = costSummaryMonth.getMonth();
-    document.getElementById('costSummaryMonthLabel').textContent = MONTH_NAMES[m];
-    document.getElementById('costSummaryYearLabel').textContent = y;
-
-    let total = 0, newTotal = 0, repairTotal = 0, count = 0;
-    const items = [];
-    for(const key in data.events){
-      const parts = key.split('-').map(Number);
-      if(parts[0] === y && (parts[1]-1) === m){
-        data.events[key].forEach(ev=>{
-          const cost = Number(ev.totalCost || 0);
-          total += cost;
-          count++;
-          if(ev.category === '하자보수') repairTotal += cost; else newTotal += cost;
-          items.push({...ev, dateKey:key});
-        });
-      }
-    }
-
-    document.getElementById('costSummaryTotal').textContent = total.toLocaleString('ko-KR') + '원';
-    document.getElementById('costSummaryCount').textContent = count + '건';
-    document.getElementById('costSummaryNew').textContent = newTotal.toLocaleString('ko-KR') + '원';
-    document.getElementById('costSummaryRepair').textContent = repairTotal.toLocaleString('ko-KR') + '원';
-
-    items.sort((a,b)=> a.dateKey.localeCompare(b.dateKey) || a.start.localeCompare(b.start));
-    const listEl = document.getElementById('costSummaryList');
-    listEl.innerHTML = '';
-    if(items.length === 0){
-      listEl.innerHTML = '<div class="empty-msg">이 달에 등록된 일정이 없어요.</div>';
-      return;
-    }
-    items.forEach(ev=>{
-      const d = ev.dateKey.split('-');
-      const row = document.createElement('div');
-      row.className = 'upcoming-item';
-      row.innerHTML = `
-        <div class="upcoming-item-main">
-          <span class="upcoming-name">${escapeHtml(ev.location || ev.category || '일정')}</span>
-          <span class="upcoming-loc">${parseInt(d[1],10)}/${parseInt(d[2],10)} · ${escapeHtml(ev.category || '')}</span>
-        </div>
-        <span class="upcoming-date">${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</span>
-      `;
-      row.addEventListener('click', ()=> openDetailView(ev));
-      listEl.appendChild(row);
-    });
-  }
-
-  document.getElementById('openCostSummaryBtn').addEventListener('click', ()=>{
-    costSummaryMonth = new Date();
-    renderCostSummary();
-    document.getElementById('costSummaryOverlay').style.display = 'flex';
-  });
-  document.getElementById('costSummaryCloseX').addEventListener('click', ()=>{
-    document.getElementById('costSummaryOverlay').style.display = 'none';
-  });
-  document.getElementById('costSummaryPrevBtn').addEventListener('click', ()=>{
-    costSummaryMonth = new Date(costSummaryMonth.getFullYear(), costSummaryMonth.getMonth()-1, 1);
-    renderCostSummary();
-  });
-  document.getElementById('costSummaryNextBtn').addEventListener('click', ()=>{
-    costSummaryMonth = new Date(costSummaryMonth.getFullYear(), costSummaryMonth.getMonth()+1, 1);
-    renderCostSummary();
-  });
-
-  function updateCountdown(){
-    const now = new Date();
-    const upcoming = allEventsSorted().filter(e=>e.dt >= now);
-    const titleEl = document.getElementById('countdownTitle');
-    const timeEl = document.getElementById('countdownTime');
-    if(upcoming.length === 0){
-      titleEl.textContent = '예정된 일정이 없어요';
-      timeEl.textContent = '—';
-      timeEl.classList.remove('pulse');
-      return;
-    }
-    const next = upcoming[0];
-    titleEl.textContent = next.title;
-    const diff = Math.max(0, next.dt - now);
-    const h = Math.floor(diff/3600000);
-    const m = Math.floor((diff%3600000)/60000);
-    const s = Math.floor((diff%60000)/1000);
-    timeEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
-    if(diff < 60000) timeEl.classList.add('pulse'); else timeEl.classList.remove('pulse');
-  }
-
   function render(){
     renderCalendar();
-    renderSideList();
-    renderUpcoming();
-    updateCountdown();
-  }
-
-  // ---- nav ----
-  const calCard = document.getElementById('calCard');
-  const toggleCalBtn = document.getElementById('toggleCalBtn');
-  function collapseCalendar(){
-    calCard.style.display = 'none';
-    toggleCalBtn.textContent = '📅 달력 크게 보기';
-  }
-  function expandCalendar(){
-    calCard.style.display = 'block';
-    toggleCalBtn.textContent = '📅 달력 닫기';
-  }
-  toggleCalBtn.addEventListener('click', ()=>{
-    if(calCard.style.display === 'none'){
-      expandCalendar();
-      viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-      render();
-      calCard.scrollIntoView({behavior:'smooth', block:'start'});
-    }else{
-      collapseCalendar();
-    }
-  });
-
-  document.getElementById('prevDayBtn').addEventListener('click', ()=>{
-    selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()-1);
-    viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    render();
-  });
-  document.getElementById('nextDayBtn').addEventListener('click', ()=>{
-    selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()+1);
-    viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    render();
-  });
-
-  document.getElementById('prevBtn').addEventListener('click', ()=>{
-    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1);
-    render();
-  });
-  document.getElementById('nextBtn').addEventListener('click', ()=>{
-    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1);
-    render();
-  });
-  document.getElementById('todayBtn').addEventListener('click', ()=>{
-    viewDate = new Date();
-    selectedDate = new Date();
-    render();
-  });
-
-  // ---- modal ----
-  const overlay = document.getElementById('overlay');
-  function timeToMinutes(str){
-    const [h,m] = str.split(':').map(Number);
-    return h*60 + m;
-  }
-  function minutesToTime(mins){
-    const h = String(Math.floor(mins/60)).padStart(2,'0');
-    const m = String(mins%60).padStart(2,'0');
-    return `${h}:${m}`;
-  }
-  function syncEndMin(){
-    const startEl = document.getElementById('inpStart');
-    const endEl = document.getElementById('inpEnd');
-    if(!startEl.value) return;
-    endEl.min = startEl.value;
-    if(endEl.value && endEl.value <= startEl.value){
-      const newEndMin = Math.min(timeToMinutes(startEl.value) + 60, 23*60 + 59);
-      endEl.value = minutesToTime(newEndMin);
+    if(document.getElementById('dayOverlay').style.display === 'flex' && selectedDateKey){
+      renderDayEntries();
     }
   }
-  syncEndMin();
-  document.getElementById('inpStart').addEventListener('change', syncEndMin);
-  document.getElementById('inpStart').addEventListener('input', syncEndMin);
 
+  // ===== 하루 상세 =====
+  function openDayOverlay(key, dateObj){
+    selectedDateKey = key;
+    document.getElementById('dayTitle').textContent = `${dateObj.getMonth()+1}월 ${dateObj.getDate()}일`;
+    renderDayEntries();
+    document.getElementById('dayOverlay').style.display = 'flex';
+  }
+  function renderDayEntries(){
+    const evs = (data.events[selectedDateKey] || []).slice();
+    const total = evs.reduce((sum,ev)=> sum + Number(ev.totalCost||0), 0);
+    const netProfit = evs.reduce((sum,ev)=> sum + entryNetProfit(ev), 0);
+    document.getElementById('daySubTotal').innerHTML = `이 날 총 비용 ${total.toLocaleString('ko-KR')}원 · <span style="color:var(--profit); font-weight:700;">순이익 ${netProfit.toLocaleString('ko-KR')}원</span>`;
+
+    const list = document.getElementById('dayEntryList');
+    list.innerHTML = '';
+    if(evs.length === 0){
+      list.innerHTML = '<div class="empty-msg">이 날은 등록된 비용이 없어요.</div>';
+      return;
+    }
+    evs.forEach(ev=>{
+      const fuel = Number(ev.fuelCost||0);
+      const misc = Number(ev.miscCost||0);
+      const item = document.createElement('div');
+      item.className = 'entry-item';
+      item.innerHTML = `
+        <div>
+          <div class="entry-main">매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원</div>
+          ${(fuel || misc) ? `<div class="entry-sub">주유비 ${fuel.toLocaleString('ko-KR')}원 · 기타 ${misc.toLocaleString('ko-KR')}원</div>` : ''}
+          <div class="entry-sub">${escapeHtml(ev.createdBy||'-')}님 등록</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:2px;">
+          <div>
+            <div class="entry-total mono" style="text-align:right;">${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</div>
+            <div class="mono" style="text-align:right; font-size:12.5px; color:var(--profit); font-weight:700; margin-top:2px;">순이익 ${entryNetProfit(ev).toLocaleString('ko-KR')}원</div>
+          </div>
+          ${ev.createdBy === myName ? `<button class="entry-del" data-id="${ev.id}" title="삭제">×</button>` : ''}
+        </div>
+      `;
+      item.addEventListener('click', (e)=>{
+        if(e.target.classList.contains('entry-del')) return;
+        if(ev.createdBy === myName) openCostModal(ev);
+      });
+      list.appendChild(item);
+    });
+    list.querySelectorAll('.entry-del').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if(!confirm('이 비용 항목을 삭제할까요?')) return;
+        try{ await deleteEntryDoc(btn.getAttribute('data-id')); }
+        catch(err){ alert('삭제하지 못했어요. 잠시 후 다시 시도해주세요.'); }
+      });
+    });
+  }
+  document.getElementById('dayCloseX').addEventListener('click', ()=>{
+    document.getElementById('dayOverlay').style.display = 'none';
+  });
+  document.getElementById('dayAddBtn').addEventListener('click', ()=> openCostModal(null));
+
+  // ===== 비용 추가/수정 모달 =====
   let editingId = null;
-  const MAT_UNIT_PRICE = 2200;
-  let currentMatQty = 0;
-  let currentInstallFee = 150000;
-
-  function updateCostSummaryLine(){
-    const total = currentMatQty * MAT_UNIT_PRICE + currentInstallFee;
-    document.getElementById('costSummaryText').textContent = `매트 ${currentMatQty}장 · 시공비 ${currentInstallFee.toLocaleString('ko-KR')}원`;
-    document.getElementById('costSummaryTotal').textContent = `합계 ${total.toLocaleString('ko-KR')}원`;
-  }
-
-  function updateTotalCost(){
+  function updateCostTotalDisplay(){
     const qty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
     const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
     const total = qty * MAT_UNIT_PRICE + fee;
-    document.getElementById('totalCostDisplay').textContent = total.toLocaleString('ko-KR') + '원';
+    document.getElementById('costTotalDisplay').textContent = total.toLocaleString('ko-KR') + '원';
+    updateNetProfitDisplay();
   }
-  document.getElementById('inpMatQty').addEventListener('input', updateTotalCost);
-  document.getElementById('inpInstallFee').addEventListener('input', updateTotalCost);
-
-  const costOverlay = document.getElementById('costOverlay');
-  document.getElementById('openCostModalBtn').addEventListener('click', ()=>{
-    document.getElementById('inpMatQty').value = currentMatQty;
-    document.getElementById('inpInstallFee').value = currentInstallFee;
-    updateTotalCost();
-    costOverlay.style.display = 'flex';
-  });
-  document.getElementById('costModalCancel').addEventListener('click', ()=>{
-    costOverlay.style.display = 'none';
-  });
-  costOverlay.addEventListener('click', (e)=>{
-    if(e.target === costOverlay) costOverlay.style.display = 'none';
-  });
-  document.getElementById('costModalConfirm').addEventListener('click', ()=>{
-    currentMatQty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
-    currentInstallFee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
-    updateCostSummaryLine();
-    costOverlay.style.display = 'none';
-  });
-
-  function resetModalForAdd(){
-    editingId = null;
-    document.getElementById('modalTitle').textContent = '일정 추가';
-    document.getElementById('modalSave').textContent = '저장';
-    document.getElementById('inpCategory').value = '';
-    document.getElementById('inpStart').value = '09:00';
-    document.getElementById('inpEnd').value = '10:00';
-    syncEndMin();
-    document.getElementById('inpLocation').value = '';
-    document.getElementById('inpLocationDetail').value = '';
-    document.getElementById('inpLocationDetail').style.display = 'none';
-    document.getElementById('addrSearchInlinePanel').style.display = 'none';
-    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
-    currentMatQty = 0;
-    currentInstallFee = 150000;
-    updateCostSummaryLine();
-    document.getElementById('modalMap').innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
-    overlay.style.display = 'flex';
-    setTimeout(()=>document.getElementById('inpCategory').focus(), 50);
+  function updateNetProfitDisplay(){
+    const qty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
+    const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
+    const fuel = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
+    const misc = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
+    const total = qty * MAT_UNIT_PRICE + fee;
+    const netProfit = total - fuel - misc;
+    document.getElementById('netProfitDisplay').textContent = netProfit.toLocaleString('ko-KR') + '원';
   }
+  document.getElementById('inpMatQty').addEventListener('input', updateCostTotalDisplay);
+  document.getElementById('inpInstallFee').addEventListener('input', updateCostTotalDisplay);
+  document.getElementById('inpFuelCost').addEventListener('input', updateNetProfitDisplay);
+  document.getElementById('inpMiscCost').addEventListener('input', updateNetProfitDisplay);
 
-  function openModalForEdit(ev){
-    editingId = ev.id;
-    document.getElementById('modalTitle').textContent = '일정 수정';
-    document.getElementById('modalSave').textContent = '수정 완료';
-    document.getElementById('inpCategory').value = ev.category || '';
-    document.getElementById('inpStart').value = ev.start;
-    document.getElementById('inpEnd').value = ev.end || '';
-    syncEndMin();
-    document.getElementById('inpLocation').value = ev.location || '';
-    document.getElementById('inpLocationDetail').value = '';
-    document.getElementById('inpLocationDetail').style.display = 'none';
-    document.getElementById('addrSearchInlinePanel').style.display = 'none';
-    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
-    currentMatQty = ev.matQty != null ? ev.matQty : 0;
-    currentInstallFee = ev.installFee != null ? ev.installFee : 150000;
-    updateCostSummaryLine();
-    const mapEl = document.getElementById('modalMap');
-    if(ev.location){
-      const q = encodeURIComponent(ev.location);
-      mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-    }else{
-      mapEl.innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
-    }
-    overlay.style.display = 'flex';
-    setTimeout(()=>document.getElementById('inpCategory').focus(), 50);
+  function openCostModal(ev){
+    editingId = ev ? ev.id : null;
+    document.getElementById('costModalTitle').textContent = ev ? '비용 수정' : '비용 추가';
+    document.getElementById('costSaveBtn').textContent = ev ? '수정 완료' : '저장';
+    const parts = selectedDateKey.split('-');
+    document.getElementById('costModalDate').textContent = `${parseInt(parts[1],10)}월 ${parseInt(parts[2],10)}일`;
+    document.getElementById('inpMatQty').value = ev ? (ev.matQty||0) : 0;
+    document.getElementById('inpInstallFee').value = ev ? (ev.installFee!=null?ev.installFee:150000) : 150000;
+    document.getElementById('inpFuelCost').value = ev ? (ev.fuelCost||0) : 0;
+    document.getElementById('inpMiscCost').value = ev ? (ev.miscCost||0) : 0;
+    updateCostTotalDisplay();
+    document.getElementById('costOverlay').style.display = 'flex';
+    setTimeout(()=>document.getElementById('inpMatQty').focus(), 50);
   }
-
-  document.getElementById('addBtn').addEventListener('click', resetModalForAdd);
-
-  let currentDetailEv = null;
-  function openDetailView(ev){
-    currentDetailEv = ev;
-    const badge = document.getElementById('detailCategoryBadge');
-    if(ev.category){
-      badge.style.display = 'inline-block';
-      badge.textContent = ev.category;
-      if(ev.category === '하자보수'){
-        badge.style.background = 'var(--reminder-soft)';
-        badge.style.color = 'var(--reminder)';
-      }else{
-        badge.style.background = 'var(--accent-soft)';
-        badge.style.color = 'var(--accent-deep)';
-      }
-    }else{
-      badge.style.display = 'none';
-    }
-    document.getElementById('detailName').textContent = ev.title;
-    const timeRange = ev.end ? `${ev.start}–${ev.end}` : ev.start;
-    const evDate = ev.dt || (ev.dateKey ? new Date(`${ev.dateKey}T00:00:00`) : null);
-    document.getElementById('detailDate').textContent = evDate
-      ? `${evDate.getMonth()+1}월 ${evDate.getDate()}일 · ${timeRange}`
-      : timeRange;
-
-    const locEl = document.getElementById('detailLocation');
-    const mapEl = document.getElementById('detailMap');
-    if(ev.location){
-      locEl.textContent = ev.location;
-      const q = encodeURIComponent(ev.location);
-      mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-      mapEl.style.display = 'block';
-    }else{
-      locEl.textContent = '등록된 위치가 없어요';
-      mapEl.style.display = 'none';
-      mapEl.innerHTML = '';
-    }
-
-    const costEl = document.getElementById('detailCost');
-    if(ev.matQty || ev.installFee){
-      costEl.innerHTML = `매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원 · 합계 <b>${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</b>`;
-    }else{
-      costEl.textContent = '등록된 비용 정보가 없어요';
-    }
-
-    document.getElementById('detailCreatedBy').textContent = ev.createdBy || '-';
-    document.getElementById('detailEditBtn').style.display = (ev.createdBy === myName) ? 'block' : 'none';
-    document.getElementById('detailOverlay').style.display = 'flex';
-  }
-  document.getElementById('detailCloseBtn').addEventListener('click', ()=>{
-    document.getElementById('detailOverlay').style.display = 'none';
+  document.getElementById('costCloseX').addEventListener('click', ()=>{
+    document.getElementById('costOverlay').style.display = 'none';
   });
-  document.getElementById('detailCloseX').addEventListener('click', ()=>{
-    document.getElementById('detailOverlay').style.display = 'none';
+  document.getElementById('costCancelBtn').addEventListener('click', ()=>{
+    document.getElementById('costOverlay').style.display = 'none';
   });
-  document.getElementById('detailEditBtn').addEventListener('click', ()=>{
-    document.getElementById('detailOverlay').style.display = 'none';
-    if(currentDetailEv) openModalForEdit(currentDetailEv);
-  });
-
-  function openAddressSearch(){
-    if(typeof daum === 'undefined' || !daum.Postcode){
-      const mapEl = document.getElementById('modalMap');
-      mapEl.innerHTML = '<div class="map-msg">주소 검색 기능을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>';
-      return;
-    }
-    const panel = document.getElementById('addrSearchInlinePanel');
-    const wrap = document.getElementById('addrSearchEmbedWrap');
-    panel.style.display = 'block';
-    wrap.innerHTML = '';
-    new daum.Postcode({
-      oncomplete: function(data){
-        const addr = data.roadAddress || data.jibunAddress || data.address;
-        document.getElementById('inpLocation').value = addr || '(주소값 없음)';
-        const detailEl = document.getElementById('inpLocationDetail');
-        detailEl.style.display = 'block';
-        const mapEl = document.getElementById('modalMap');
-        const q = encodeURIComponent(addr || '');
-        mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-        panel.style.display = 'none';
-        wrap.innerHTML = '';
-        detailEl.focus();
-      },
-      onclose: function(state){
-        if(state === 'FORCE_CLOSE'){
-          panel.style.display = 'none';
-          wrap.innerHTML = '';
-        }
-      },
-      width: '100%',
-      height: '100%'
-    }).embed(wrap);
-    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-  }
-  document.getElementById('addrSearchBtn').addEventListener('click', openAddressSearch);
-
-  let locTypeDebounce = null;
-  document.getElementById('inpLocation').addEventListener('input', (e)=>{
-    const val = e.target.value.trim();
-    clearTimeout(locTypeDebounce);
-    const mapEl = document.getElementById('modalMap');
-    const detailEl = document.getElementById('inpLocationDetail');
-    if(!val){
-      mapEl.innerHTML = '<div class="map-msg">주소를 검색하면 지도가 여기 표시돼요</div>';
-      detailEl.style.display = 'none';
-      return;
-    }
-    detailEl.style.display = 'block';
-    mapEl.innerHTML = '<div class="map-msg">지도를 불러오는 중...</div>';
-    locTypeDebounce = setTimeout(()=>{
-      const q = encodeURIComponent(val);
-      mapEl.innerHTML = `<iframe src="https://www.google.com/maps?q=${q}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-    }, 600);
-  });
-  document.getElementById('addrSearchCloseBtn').addEventListener('click', ()=>{
-    document.getElementById('addrSearchInlinePanel').style.display = 'none';
-    document.getElementById('addrSearchEmbedWrap').innerHTML = '';
-  });
-  document.getElementById('modalCancel').addEventListener('click', ()=>{
-    overlay.style.display = 'none';
-  });
-  document.getElementById('modalCloseX').addEventListener('click', ()=>{
-    overlay.style.display = 'none';
-  });
-  document.getElementById('modalSave').addEventListener('click', async ()=>{
+  document.getElementById('costSaveBtn').addEventListener('click', async ()=>{
     if(!fbReady){
-      alert('Firebase 설정이 아직 안 되어 있어서 저장할 수 없어요. 상단 안내를 확인해주세요.');
+      alert('Firebase 연결 후 저장할 수 있어요.');
       return;
     }
-    const category = document.getElementById('inpCategory').value;
-    if(!category){
-      document.getElementById('inpCategory').focus();
-      alert('구분(신규/하자보수)을 선택해주세요.');
-      return;
-    }
-    const start = document.getElementById('inpStart').value || '09:00';
-    const end = document.getElementById('inpEnd').value || '';
-    const location = document.getElementById('inpLocation').value.trim();
-    const locationDetail = document.getElementById('inpLocationDetail').value.trim();
-    const fullLocation = locationDetail ? `${location} ${locationDetail}` : location;
-    const title = fullLocation || category;
-    const matQty = currentMatQty;
-    const installFee = currentInstallFee;
+    const matQty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
+    const installFee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
+    const fuelCost = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
+    const miscCost = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
     const totalCost = matQty * MAT_UNIT_PRICE + installFee;
-    const key = dateKey(selectedDate);
-
-    const saveBtn = document.getElementById('modalSave');
-    saveBtn.disabled = true;
+    const netProfit = totalCost - fuelCost - miscCost;
+    const btn = document.getElementById('costSaveBtn');
+    btn.disabled = true;
     try{
       if(editingId){
-        await updateEventDoc(editingId, {
-          category, title, start, end, location: fullLocation,
-          matQty, installFee, totalCost
-        });
+        await updateEntryDoc(editingId, { matQty, installFee, fuelCost, miscCost, totalCost, netProfit });
       }else{
-        await addEventDoc({
-          dateKey: key,
-          category, title, start, end, location: fullLocation,
-          matQty, installFee, totalCost,
-          createdBy: myName
-        });
+        await addEntryDoc({ dateKey: selectedDateKey, matQty, installFee, fuelCost, miscCost, totalCost, netProfit, createdBy: myName });
       }
-      overlay.style.display = 'none';
-    }catch(err){
-      console.error(err);
-      alert('저장하지 못했어요. 네트워크 상태나 Firestore 설정을 확인해주세요.');
+      document.getElementById('costOverlay').style.display = 'none';
+    }catch(e){
+      console.error(e);
+      alert('저장하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
-    saveBtn.disabled = false;
+    btn.disabled = false;
   });
 
-  setInterval(updateCountdown, 1000);
+  // ===== 달력 네비게이션 =====
+  document.getElementById('prevBtn').addEventListener('click', ()=>{
+    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1);
+    renderCalendar();
+  });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1);
+    renderCalendar();
+  });
+  document.getElementById('todayBtn').addEventListener('click', ()=>{
+    viewDate = new Date();
+    renderCalendar();
+  });
 
-  render();
+  renderCalendar();
   startRealtimeSync();
 })();
 </script>
