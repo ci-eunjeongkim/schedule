@@ -298,7 +298,7 @@
     color:var(--ink);
   }
   .mat-row{ display:flex; align-items:center; gap:10px; }
-  .mat-row input{ width:120px; flex-shrink:0; }
+  .mat-row input{ width:100px; flex-shrink:0; }
   .mat-row span{ font-size:16px; color:var(--ink-soft); white-space:nowrap; }
 
   .total-box{
@@ -448,7 +448,9 @@
       <label for="inpMatQty">상상매트</label>
       <div class="mat-row">
         <input id="inpMatQty" type="number" min="0" step="1" value="0">
-        <span>장 × 2,200원</span>
+        <span>장 ×</span>
+        <input id="inpMatPrice" type="number" min="0" step="100" value="2200">
+        <span>원</span>
       </div>
     </div>
     <div class="field">
@@ -521,7 +523,8 @@
     messagingSenderId: "399466089160",
     appId: "1:399466089160:web:aa80f4762112eb7fb933fd"
   };
-  const MAT_UNIT_PRICE = 2200;
+  const DEFAULT_MAT_PRICE = 2200;
+  function getMatPrice(){ const v = parseInt(document.getElementById('inpMatPrice').value, 10); return isNaN(v) ? 0 : v; }
 
   let db = null;
   let fbReady = false;
@@ -838,7 +841,7 @@
       item.className = 'entry-item';
       item.innerHTML = `
         <div>
-          <div class="entry-main">매트 ${ev.matQty||0}장 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원</div>
+          <div class="entry-main">매트 ${ev.matQty||0}장 × ${Number(ev.matUnitPrice!=null?ev.matUnitPrice:2200).toLocaleString('ko-KR')}원 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원</div>
           ${(fuel || misc) ? `<div class="entry-sub">주유비 ${fuel.toLocaleString('ko-KR')}원 · 기타 ${misc.toLocaleString('ko-KR')}원</div>` : ''}
           <div class="entry-sub">${escapeHtml(ev.createdBy||'-')}님 등록</div>
         </div>
@@ -875,7 +878,7 @@
   function updateCostTotalDisplay(){
     const qty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
     const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
-    const total = qty * MAT_UNIT_PRICE + fee;
+    const total = qty * getMatPrice() + fee;
     document.getElementById('costTotalDisplay').textContent = total.toLocaleString('ko-KR') + '원';
     updateNetProfitDisplay();
   }
@@ -884,11 +887,12 @@
     const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
     const fuel = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
     const misc = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
-    const total = qty * MAT_UNIT_PRICE + fee;
+    const total = qty * getMatPrice() + fee;
     const netProfit = total - fuel - misc;
     document.getElementById('netProfitDisplay').textContent = netProfit.toLocaleString('ko-KR') + '원';
   }
   document.getElementById('inpMatQty').addEventListener('input', updateCostTotalDisplay);
+  document.getElementById('inpMatPrice').addEventListener('input', updateCostTotalDisplay);
   document.getElementById('inpInstallFee').addEventListener('input', updateCostTotalDisplay);
   document.getElementById('inpFuelCost').addEventListener('input', updateNetProfitDisplay);
   document.getElementById('inpMiscCost').addEventListener('input', updateNetProfitDisplay);
@@ -900,6 +904,7 @@
     const parts = selectedDateKey.split('-');
     document.getElementById('costModalDate').textContent = `${parseInt(parts[1],10)}월 ${parseInt(parts[2],10)}일`;
     document.getElementById('inpMatQty').value = ev ? (ev.matQty||0) : 0;
+    document.getElementById('inpMatPrice').value = ev && ev.matUnitPrice!=null ? ev.matUnitPrice : DEFAULT_MAT_PRICE;
     document.getElementById('inpInstallFee').value = ev ? (ev.installFee!=null?ev.installFee:150000) : 150000;
     document.getElementById('inpFuelCost').value = ev ? (ev.fuelCost||0) : 0;
     document.getElementById('inpMiscCost').value = ev ? (ev.miscCost||0) : 0;
@@ -919,18 +924,19 @@
       return;
     }
     const matQty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
+    const matUnitPrice = getMatPrice();
     const installFee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
     const fuelCost = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
     const miscCost = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
-    const totalCost = matQty * MAT_UNIT_PRICE + installFee;
+    const totalCost = matQty * matUnitPrice + installFee;
     const netProfit = totalCost - fuelCost - miscCost;
     const btn = document.getElementById('costSaveBtn');
     btn.disabled = true;
     try{
       if(editingId){
-        await updateEntryDoc(editingId, { matQty, installFee, fuelCost, miscCost, totalCost, netProfit });
+        await updateEntryDoc(editingId, { matQty, matUnitPrice, installFee, fuelCost, miscCost, totalCost, netProfit });
       }else{
-        await addEntryDoc({ dateKey: selectedDateKey, matQty, installFee, fuelCost, miscCost, totalCost, netProfit, createdBy: myName });
+        await addEntryDoc({ dateKey: selectedDateKey, matQty, matUnitPrice, installFee, fuelCost, miscCost, totalCost, netProfit, createdBy: myName });
       }
       document.getElementById('costOverlay').style.display = 'none';
     }catch(e){
