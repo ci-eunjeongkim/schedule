@@ -306,6 +306,18 @@
     background:var(--surface);
     color:var(--ink);
   }
+  .exp-block{ margin-bottom:18px; }
+  .exp-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
+  .exp-head label{ font-size:15px; color:var(--ink-soft); font-weight:600; }
+  .exp-sum{ font-size:15px; font-weight:700; color:var(--expense); }
+  .exp-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .exp-row .exp-no{ width:28px; flex-shrink:0; font-size:15px; color:var(--ink-faint); text-align:center; }
+  .exp-row input{ flex:1; min-width:0; border:1px solid var(--border); border-radius:9px; padding:12px 12px; font-size:18px; font-family:'IBM Plex Sans KR',sans-serif; background:var(--surface); color:var(--ink); }
+  .exp-row .exp-unit{ font-size:16px; color:var(--ink-soft); }
+  .exp-row .exp-del{ background:none; border:none; color:var(--ink-faint); font-size:24px; cursor:pointer; padding:2px 8px; line-height:1; }
+  .exp-row .exp-del:hover{ color:var(--danger); }
+  .exp-add{ width:100%; background:var(--accent-soft); color:var(--accent-deep); border:1.5px dashed var(--accent); border-radius:10px; padding:12px 0; font-size:16px; font-weight:700; font-family:'IBM Plex Sans KR',sans-serif; cursor:pointer; }
+  .exp-add:active{ background:#dbe6f2; }
   .mat-row{ display:flex; align-items:center; gap:10px; }
   .mat-row input{ width:100px; flex-shrink:0; }
   .mat-row span{ font-size:16px; color:var(--ink-soft); white-space:nowrap; }
@@ -416,20 +428,19 @@
 
     <div class="month-total-bar">
       <div class="month-stat">
-        <div class="month-total-label">이번 달 총 수익</div>
+        <div class="month-total-label">이번 달 총 수익 <span id="monthTotalCount">(0건)</span></div>
         <div class="month-total-value mono" id="monthTotalValue">0원</div>
       </div>
       <div class="month-stat month-stat-click" id="monthHalfBtn" role="button" tabindex="0">
         <div class="month-total-label">총 수익의 절반</div>
         <div class="month-total-value mono" id="monthHalfValue">0원</div>
-        <div class="month-stat-hint">눌러서 비용 입력</div>
+        <div class="month-stat-hint">눌러서 주유비용, 부대비용 입력</div>
       </div>
       <div class="month-stat month-stat-net">
         <div class="month-total-label">순이익</div>
         <div class="month-total-value mono" id="monthNetProfitValue" style="color:var(--profit);">0원</div>
       </div>
     </div>
-    <div class="month-total-count" id="monthTotalCount" style="margin:-8px 0 16px; text-align:center;">0건</div>
 
     <div class="weekdays">
       <div class="weekdays-row"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
@@ -494,13 +505,15 @@
       <div class="total-box-label">총 수익의 절반</div>
       <div class="total-box-value mono" id="monthExpHalf">0원</div>
     </div>
-    <div class="field" style="margin-top:18px;">
-      <label for="inpMonthFuel">주유비</label>
-      <input id="inpMonthFuel" type="number" min="0" step="1000" value="0">
+    <div class="exp-block" style="margin-top:18px;">
+      <div class="exp-head"><label>주유비</label><span class="exp-sum" id="fuelSum">0건 · 0원</span></div>
+      <div id="fuelList"></div>
+      <button type="button" class="exp-add" id="fuelAddBtn">+ 주유비 추가</button>
     </div>
-    <div class="field">
-      <label for="inpMonthMisc">기타 부대비용</label>
-      <input id="inpMonthMisc" type="number" min="0" step="1000" value="0">
+    <div class="exp-block">
+      <div class="exp-head"><label>기타 부대비용</label><span class="exp-sum" id="miscSum">0건 · 0원</span></div>
+      <div id="miscList"></div>
+      <button type="button" class="exp-add" id="miscAddBtn">+ 부대비용 추가</button>
     </div>
     <div class="total-box" style="background:#EAF4EE;">
       <div class="total-box-label">순이익 (절반 − 주유비 − 부대비용)</div>
@@ -736,7 +749,7 @@
       snapshot.forEach(docSnap=>{
         const d = docSnap.data();
         if(d.kind === 'monthExpense'){
-          newMonthExp[d.monthKey] = { fuel: Number(d.fuelCost||0), misc: Number(d.miscCost||0) };
+          newMonthExp[d.monthKey] = expFromDoc(d);
           return;
         }
         const ev = { id: docSnap.id, ...d };
@@ -779,6 +792,12 @@
     return evs.reduce((sum,ev)=> sum + entryNetProfit(ev), 0);
   }
 
+  const sumList = arr => arr.reduce((a,b)=> a + (Number(b)||0), 0);
+  function expFromDoc(d){
+    const fuelItems = Array.isArray(d.fuelItems) ? d.fuelItems.map(Number) : (Number(d.fuelCost||0) > 0 ? [Number(d.fuelCost)] : []);
+    const miscItems = Array.isArray(d.miscItems) ? d.miscItems.map(Number) : (Number(d.miscCost||0) > 0 ? [Number(d.miscCost)] : []);
+    return { fuelItems, miscItems, fuel: sumList(fuelItems), misc: sumList(miscItems) };
+  }
   function monthKeyOf(y, m){ return `${y}-${pad(m+1)}`; }
   function currentMonthHalf(){
     const y = viewDate.getFullYear(), m = viewDate.getMonth();
@@ -789,25 +808,48 @@
     }
     return Math.round(sum / 2);
   }
+  const expState = { fuel: [], misc: [] };
+  const EXP_CFG = {
+    fuel: { list:'fuelList', sum:'fuelSum' },
+    misc: { list:'miscList', sum:'miscSum' }
+  };
   function updateMonthExpNet(){
-    const fuel = parseInt(document.getElementById('inpMonthFuel').value, 10) || 0;
-    const misc = parseInt(document.getElementById('inpMonthMisc').value, 10) || 0;
-    document.getElementById('monthExpNet').textContent = (currentMonthHalf() - fuel - misc).toLocaleString('ko-KR') + '원';
+    for(const k in EXP_CFG){
+      const items = expState[k].filter(v=> (Number(v)||0) > 0);
+      document.getElementById(EXP_CFG[k].sum).textContent = `${items.length}건 · ${sumList(items).toLocaleString('ko-KR')}원`;
+    }
+    document.getElementById('monthExpNet').textContent = (currentMonthHalf() - sumList(expState.fuel) - sumList(expState.misc)).toLocaleString('ko-KR') + '원';
   }
+  function renderExpList(kind, focusLast){
+    const box = document.getElementById(EXP_CFG[kind].list);
+    box.innerHTML = '';
+    expState[kind].forEach((val, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'exp-row';
+      row.innerHTML = `<span class="exp-no">${idx+1}</span><input type="number" inputmode="numeric" min="0" step="1000" placeholder="금액"><span class="exp-unit">원</span><button type="button" class="exp-del" title="삭제">×</button>`;
+      const inp = row.querySelector('input');
+      inp.value = val === 0 || val === '' ? '' : val;
+      inp.addEventListener('input', ()=>{ expState[kind][idx] = parseInt(inp.value, 10) || 0; updateMonthExpNet(); });
+      row.querySelector('.exp-del').addEventListener('click', ()=>{ expState[kind].splice(idx, 1); renderExpList(kind); updateMonthExpNet(); });
+      box.appendChild(row);
+    });
+    if(focusLast){ const ins = box.querySelectorAll('input'); if(ins.length) ins[ins.length-1].focus(); }
+  }
+  document.getElementById('fuelAddBtn').addEventListener('click', ()=>{ expState.fuel.push(0); renderExpList('fuel', true); updateMonthExpNet(); });
+  document.getElementById('miscAddBtn').addEventListener('click', ()=>{ expState.misc.push(0); renderExpList('misc', true); updateMonthExpNet(); });
   function openMonthExpModal(){
     const y = viewDate.getFullYear(), m = viewDate.getMonth();
-    const exp = data.monthExp[monthKeyOf(y, m)] || { fuel:0, misc:0 };
+    const exp = data.monthExp[monthKeyOf(y, m)] || { fuelItems:[], miscItems:[] };
     document.getElementById('monthExpTitle').textContent = `${y}년 ${m+1}월 비용`;
     document.getElementById('monthExpHalf').textContent = currentMonthHalf().toLocaleString('ko-KR') + '원';
-    document.getElementById('inpMonthFuel').value = exp.fuel;
-    document.getElementById('inpMonthMisc').value = exp.misc;
+    expState.fuel = exp.fuelItems.slice();
+    expState.misc = exp.miscItems.slice();
+    renderExpList('fuel'); renderExpList('misc');
     updateMonthExpNet();
     document.getElementById('monthExpOverlay').style.display = 'flex';
   }
   document.getElementById('monthHalfBtn').addEventListener('click', openMonthExpModal);
   document.getElementById('monthHalfBtn').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMonthExpModal(); } });
-  document.getElementById('inpMonthFuel').addEventListener('input', updateMonthExpNet);
-  document.getElementById('inpMonthMisc').addEventListener('input', updateMonthExpNet);
   ['monthExpCloseX','monthExpCancelBtn'].forEach(id=>{
     document.getElementById(id).addEventListener('click', ()=>{ document.getElementById('monthExpOverlay').style.display = 'none'; });
   });
@@ -815,12 +857,14 @@
     if(!fbReady){ alert('Firebase 연결 후 저장할 수 있어요.'); return; }
     const y = viewDate.getFullYear(), m = viewDate.getMonth();
     const monthKey = monthKeyOf(y, m);
-    const fuelCost = parseInt(document.getElementById('inpMonthFuel').value, 10) || 0;
-    const miscCost = parseInt(document.getElementById('inpMonthMisc').value, 10) || 0;
+    const fuelItems = expState.fuel.filter(v=> (Number(v)||0) > 0);
+    const miscItems = expState.misc.filter(v=> (Number(v)||0) > 0);
+    const fuelCost = sumList(fuelItems);
+    const miscCost = sumList(miscItems);
     const btn = document.getElementById('monthExpSaveBtn');
     btn.disabled = true;
     try{
-      await db.collection('events').doc('monthExpense-' + monthKey).set({ kind:'monthExpense', monthKey, fuelCost, miscCost, updatedBy: myName });
+      await db.collection('events').doc('monthExpense-' + monthKey).set({ kind:'monthExpense', monthKey, fuelItems, miscItems, fuelCost, miscCost, updatedBy: myName });
       document.getElementById('monthExpOverlay').style.display = 'none';
     }catch(e){
       console.error(e);
@@ -852,7 +896,7 @@
     document.getElementById('monthTotalValue').textContent = monthNetProfit.toLocaleString('ko-KR') + '원';
     document.getElementById('monthHalfValue').textContent = half.toLocaleString('ko-KR') + '원';
     document.getElementById('monthNetProfitValue').textContent = (half - mexp.fuel - mexp.misc).toLocaleString('ko-KR') + '원';
-    document.getElementById('monthTotalCount').textContent = monthCount + '건';
+    document.getElementById('monthTotalCount').textContent = '(' + monthCount + '건)';
 
     const firstDay = new Date(y, m, 1);
     const startOffset = firstDay.getDay();
