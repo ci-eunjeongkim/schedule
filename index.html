@@ -138,9 +138,9 @@
 
   .month-total-bar{
     display:grid;
-    grid-template-columns:repeat(3, minmax(0,1fr));
+    grid-template-columns:repeat(2, minmax(0,1fr));
     align-items:start;
-    gap:8px;
+    gap:12px 10px;
     background:var(--accent-soft);
     border-radius:11px;
     padding:14px 16px;
@@ -158,9 +158,11 @@
     margin-top:3px;
   }
   @media (max-width:400px){
-    .month-total-value{ font-size:15px; }
-    .month-total-bar{ padding:12px 10px; }
+    .month-total-value{ font-size:19px; }
+    .month-total-bar{ padding:12px 12px; }
   }
+  .month-stat-net{ grid-column:1 / -1; border-top:1px solid var(--border); padding-top:10px; display:flex; justify-content:space-between; align-items:center; }
+  .month-stat-net .month-total-value{ margin-top:0; font-size:24px; }
   .month-stat-click{
     cursor:pointer; background:#fff; border:1.5px dashed var(--accent);
     border-radius:9px; padding:6px 8px; margin:-6px 0;
@@ -422,7 +424,7 @@
         <div class="month-total-value mono" id="monthHalfValue">0원</div>
         <div class="month-stat-hint">눌러서 비용 입력</div>
       </div>
-      <div class="month-stat" style="text-align:right;">
+      <div class="month-stat month-stat-net">
         <div class="month-total-label">순이익</div>
         <div class="month-total-value mono" id="monthNetProfitValue" style="color:var(--profit);">0원</div>
       </div>
