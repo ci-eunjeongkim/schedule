@@ -407,11 +407,11 @@
 
     <div class="month-total-bar">
       <div class="month-stat">
-        <div class="month-total-label">이번 달 총 비용</div>
+        <div class="month-total-label">이번 달 순이익</div>
         <div class="month-total-value mono" id="monthTotalValue">0원</div>
       </div>
       <div class="month-stat" style="text-align:right;">
-        <div class="month-total-label">이번 달 순이익</div>
+        <div class="month-total-label">순이익의 절반</div>
         <div class="month-total-value mono" id="monthNetProfitValue" style="color:var(--profit);">0원</div>
       </div>
     </div>
@@ -461,20 +461,6 @@
     <div class="total-box">
       <div class="total-box-label">매출 합계</div>
       <div class="total-box-value mono" id="costTotalDisplay">150,000원</div>
-    </div>
-
-    <div class="field" style="margin-top:18px;">
-      <label for="inpFuelCost">주유비</label>
-      <input id="inpFuelCost" type="number" min="0" step="1000" value="0">
-    </div>
-    <div class="field">
-      <label for="inpMiscCost">기타 부대비용</label>
-      <input id="inpMiscCost" type="number" min="0" step="1000" value="0">
-    </div>
-
-    <div class="total-box" style="background:#EAF4EE;">
-      <div class="total-box-label">순이익 (매출 − 주유비 − 기타)</div>
-      <div class="total-box-value mono" id="netProfitDisplay" style="color:var(--profit);">150,000원</div>
     </div>
 
     <div class="modal-actions">
@@ -733,7 +719,7 @@
   const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
   function entryNetProfit(ev){
-    return Number(ev.totalCost||0) - Number(ev.fuelCost||0) - Number(ev.miscCost||0);
+    return Number(ev.totalCost||0);
   }
   function dayTotal(key){
     const evs = data.events[key] || [];
@@ -762,8 +748,8 @@
         });
       }
     }
-    document.getElementById('monthTotalValue').textContent = monthTotal.toLocaleString('ko-KR') + '원';
-    document.getElementById('monthNetProfitValue').textContent = monthNetProfit.toLocaleString('ko-KR') + '원';
+    document.getElementById('monthTotalValue').textContent = monthNetProfit.toLocaleString('ko-KR') + '원';
+    document.getElementById('monthNetProfitValue').textContent = Math.round(monthNetProfit / 2).toLocaleString('ko-KR') + '원';
     document.getElementById('monthTotalCount').textContent = monthCount + '건';
 
     const firstDay = new Date(y, m, 1);
@@ -826,7 +812,7 @@
     const evs = (data.events[selectedDateKey] || []).slice();
     const total = evs.reduce((sum,ev)=> sum + Number(ev.totalCost||0), 0);
     const netProfit = evs.reduce((sum,ev)=> sum + entryNetProfit(ev), 0);
-    document.getElementById('daySubTotal').innerHTML = `이 날 총 비용 ${total.toLocaleString('ko-KR')}원 · <span style="color:var(--profit); font-weight:700;">순이익 ${netProfit.toLocaleString('ko-KR')}원</span>`;
+    document.getElementById('daySubTotal').innerHTML = `이 날 순이익 ${netProfit.toLocaleString('ko-KR')}원`;
 
     const list = document.getElementById('dayEntryList');
     list.innerHTML = '';
@@ -835,20 +821,16 @@
       return;
     }
     evs.forEach(ev=>{
-      const fuel = Number(ev.fuelCost||0);
-      const misc = Number(ev.miscCost||0);
       const item = document.createElement('div');
       item.className = 'entry-item';
       item.innerHTML = `
         <div>
           <div class="entry-main">매트 ${ev.matQty||0}장 × ${Number(ev.matUnitPrice!=null?ev.matUnitPrice:2200).toLocaleString('ko-KR')}원 · 시공비 ${Number(ev.installFee||0).toLocaleString('ko-KR')}원</div>
-          ${(fuel || misc) ? `<div class="entry-sub">주유비 ${fuel.toLocaleString('ko-KR')}원 · 기타 ${misc.toLocaleString('ko-KR')}원</div>` : ''}
           <div class="entry-sub">${escapeHtml(ev.createdBy||'-')}님 등록</div>
         </div>
         <div style="display:flex; align-items:center; gap:2px;">
           <div>
             <div class="entry-total mono" style="text-align:right;">${Number(ev.totalCost||0).toLocaleString('ko-KR')}원</div>
-            <div class="mono" style="text-align:right; font-size:12.5px; color:var(--profit); font-weight:700; margin-top:2px;">순이익 ${entryNetProfit(ev).toLocaleString('ko-KR')}원</div>
           </div>
           ${ev.createdBy === myName ? `<button class="entry-del" data-id="${ev.id}" title="삭제">×</button>` : ''}
         </div>
@@ -880,22 +862,10 @@
     const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
     const total = qty * getMatPrice() + fee;
     document.getElementById('costTotalDisplay').textContent = total.toLocaleString('ko-KR') + '원';
-    updateNetProfitDisplay();
-  }
-  function updateNetProfitDisplay(){
-    const qty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
-    const fee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
-    const fuel = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
-    const misc = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
-    const total = qty * getMatPrice() + fee;
-    const netProfit = total - fuel - misc;
-    document.getElementById('netProfitDisplay').textContent = netProfit.toLocaleString('ko-KR') + '원';
   }
   document.getElementById('inpMatQty').addEventListener('input', updateCostTotalDisplay);
   document.getElementById('inpMatPrice').addEventListener('input', updateCostTotalDisplay);
   document.getElementById('inpInstallFee').addEventListener('input', updateCostTotalDisplay);
-  document.getElementById('inpFuelCost').addEventListener('input', updateNetProfitDisplay);
-  document.getElementById('inpMiscCost').addEventListener('input', updateNetProfitDisplay);
 
   function openCostModal(ev){
     editingId = ev ? ev.id : null;
@@ -906,8 +876,6 @@
     document.getElementById('inpMatQty').value = ev ? (ev.matQty||0) : 0;
     document.getElementById('inpMatPrice').value = ev && ev.matUnitPrice!=null ? ev.matUnitPrice : DEFAULT_MAT_PRICE;
     document.getElementById('inpInstallFee').value = ev ? (ev.installFee!=null?ev.installFee:150000) : 150000;
-    document.getElementById('inpFuelCost').value = ev ? (ev.fuelCost||0) : 0;
-    document.getElementById('inpMiscCost').value = ev ? (ev.miscCost||0) : 0;
     updateCostTotalDisplay();
     document.getElementById('costOverlay').style.display = 'flex';
     setTimeout(()=>document.getElementById('inpMatQty').focus(), 50);
@@ -926,17 +894,15 @@
     const matQty = parseInt(document.getElementById('inpMatQty').value, 10) || 0;
     const matUnitPrice = getMatPrice();
     const installFee = parseInt(document.getElementById('inpInstallFee').value, 10) || 0;
-    const fuelCost = parseInt(document.getElementById('inpFuelCost').value, 10) || 0;
-    const miscCost = parseInt(document.getElementById('inpMiscCost').value, 10) || 0;
     const totalCost = matQty * matUnitPrice + installFee;
-    const netProfit = totalCost - fuelCost - miscCost;
+    const netProfit = totalCost;
     const btn = document.getElementById('costSaveBtn');
     btn.disabled = true;
     try{
       if(editingId){
-        await updateEntryDoc(editingId, { matQty, matUnitPrice, installFee, fuelCost, miscCost, totalCost, netProfit });
+        await updateEntryDoc(editingId, { matQty, matUnitPrice, installFee, totalCost, netProfit });
       }else{
-        await addEntryDoc({ dateKey: selectedDateKey, matQty, matUnitPrice, installFee, fuelCost, miscCost, totalCost, netProfit, createdBy: myName });
+        await addEntryDoc({ dateKey: selectedDateKey, matQty, matUnitPrice, installFee, totalCost, netProfit, createdBy: myName });
       }
       document.getElementById('costOverlay').style.display = 'none';
     }catch(e){
