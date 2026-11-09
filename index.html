@@ -137,10 +137,10 @@
   .today-btn:hover{background:var(--surface-alt); color:var(--ink);}
 
   .month-total-bar{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:10px;
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    align-items:start;
+    gap:8px;
     background:var(--accent-soft);
     border-radius:11px;
     padding:14px 16px;
@@ -149,7 +149,6 @@
   .month-total-label{
     font-size:13.5px;
     color:var(--ink-soft);
-    white-space:nowrap;
   }
   .month-total-value{
     font-family:'IBM Plex Mono',monospace;
@@ -159,8 +158,16 @@
     margin-top:3px;
   }
   @media (max-width:400px){
-    .month-total-value{ font-size:19px; }
+    .month-total-value{ font-size:15px; }
+    .month-total-bar{ padding:12px 10px; }
   }
+  .month-stat-click{
+    cursor:pointer; background:#fff; border:1.5px dashed var(--accent);
+    border-radius:9px; padding:6px 8px; margin:-6px 0;
+  }
+  .month-stat-click:active{ background:var(--accent-soft); }
+  .month-stat-hint{ font-size:11.5px; color:var(--accent); margin-top:2px; }
+  .month-exp-line{ display:flex; justify-content:space-between; font-size:16px; margin:6px 0 2px; }
   .month-total-count{
     font-size:13px;
     color:var(--ink-faint);
@@ -407,11 +414,16 @@
 
     <div class="month-total-bar">
       <div class="month-stat">
-        <div class="month-total-label">이번 달 순이익</div>
+        <div class="month-total-label">이번 달 총 수익</div>
         <div class="month-total-value mono" id="monthTotalValue">0원</div>
       </div>
+      <div class="month-stat month-stat-click" id="monthHalfBtn" role="button" tabindex="0">
+        <div class="month-total-label">총 수익의 절반</div>
+        <div class="month-total-value mono" id="monthHalfValue">0원</div>
+        <div class="month-stat-hint">눌러서 비용 입력</div>
+      </div>
       <div class="month-stat" style="text-align:right;">
-        <div class="month-total-label">순이익의 절반</div>
+        <div class="month-total-label">순이익</div>
         <div class="month-total-value mono" id="monthNetProfitValue" style="color:var(--profit);">0원</div>
       </div>
     </div>
@@ -466,6 +478,35 @@
     <div class="modal-actions">
       <button class="btn-cancel" id="costCancelBtn">취소</button>
       <button class="btn-save" id="costSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 월 비용(주유비·부대비용) 입력 -->
+<div class="overlay" id="monthExpOverlay" style="display:none;">
+  <div class="modal">
+    <button type="button" class="modal-close-x" id="monthExpCloseX">×</button>
+    <h3 id="monthExpTitle">이번 달 비용</h3>
+    <div class="modal-sub">총 수익의 절반에서 차감할 비용을 입력하세요</div>
+    <div class="total-box">
+      <div class="total-box-label">총 수익의 절반</div>
+      <div class="total-box-value mono" id="monthExpHalf">0원</div>
+    </div>
+    <div class="field" style="margin-top:18px;">
+      <label for="inpMonthFuel">주유비</label>
+      <input id="inpMonthFuel" type="number" min="0" step="1000" value="0">
+    </div>
+    <div class="field">
+      <label for="inpMonthMisc">기타 부대비용</label>
+      <input id="inpMonthMisc" type="number" min="0" step="1000" value="0">
+    </div>
+    <div class="total-box" style="background:#EAF4EE;">
+      <div class="total-box-label">순이익 (절반 − 주유비 − 부대비용)</div>
+      <div class="total-box-value mono" id="monthExpNet" style="color:var(--profit);">0원</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="monthExpCancelBtn">취소</button>
+      <button class="btn-save" id="monthExpSaveBtn">저장</button>
     </div>
   </div>
 </div>
@@ -677,7 +718,7 @@
   }
 
   // ===== 상태 =====
-  let data = { events: {} }; // { "YYYY-MM-DD": [{id, matQty, installFee, totalCost, createdBy}] }
+  let data = { events: {}, monthExp: {} }; // { "YYYY-MM-DD": [{id, matQty, installFee, totalCost, createdBy}] }
   let viewDate = new Date();
   let selectedDateKey = '';
 
@@ -689,13 +730,19 @@
     if(!fbReady) return;
     db.collection('events').onSnapshot(snapshot=>{
       const newEvents = {};
+      const newMonthExp = {};
       snapshot.forEach(docSnap=>{
         const d = docSnap.data();
+        if(d.kind === 'monthExpense'){
+          newMonthExp[d.monthKey] = { fuel: Number(d.fuelCost||0), misc: Number(d.miscCost||0) };
+          return;
+        }
         const ev = { id: docSnap.id, ...d };
         if(!newEvents[d.dateKey]) newEvents[d.dateKey] = [];
         newEvents[d.dateKey].push(ev);
       });
       data.events = newEvents;
+      data.monthExp = newMonthExp;
       render();
     }, err=>{
       console.error('Firestore 동기화 오류', err);
@@ -730,6 +777,56 @@
     return evs.reduce((sum,ev)=> sum + entryNetProfit(ev), 0);
   }
 
+  function monthKeyOf(y, m){ return `${y}-${pad(m+1)}`; }
+  function currentMonthHalf(){
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    let sum = 0;
+    for(const key in data.events){
+      const parts = key.split('-').map(Number);
+      if(parts[0] === y && (parts[1]-1) === m) data.events[key].forEach(ev=>{ sum += entryNetProfit(ev); });
+    }
+    return Math.round(sum / 2);
+  }
+  function updateMonthExpNet(){
+    const fuel = parseInt(document.getElementById('inpMonthFuel').value, 10) || 0;
+    const misc = parseInt(document.getElementById('inpMonthMisc').value, 10) || 0;
+    document.getElementById('monthExpNet').textContent = (currentMonthHalf() - fuel - misc).toLocaleString('ko-KR') + '원';
+  }
+  function openMonthExpModal(){
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    const exp = data.monthExp[monthKeyOf(y, m)] || { fuel:0, misc:0 };
+    document.getElementById('monthExpTitle').textContent = `${y}년 ${m+1}월 비용`;
+    document.getElementById('monthExpHalf').textContent = currentMonthHalf().toLocaleString('ko-KR') + '원';
+    document.getElementById('inpMonthFuel').value = exp.fuel;
+    document.getElementById('inpMonthMisc').value = exp.misc;
+    updateMonthExpNet();
+    document.getElementById('monthExpOverlay').style.display = 'flex';
+  }
+  document.getElementById('monthHalfBtn').addEventListener('click', openMonthExpModal);
+  document.getElementById('monthHalfBtn').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMonthExpModal(); } });
+  document.getElementById('inpMonthFuel').addEventListener('input', updateMonthExpNet);
+  document.getElementById('inpMonthMisc').addEventListener('input', updateMonthExpNet);
+  ['monthExpCloseX','monthExpCancelBtn'].forEach(id=>{
+    document.getElementById(id).addEventListener('click', ()=>{ document.getElementById('monthExpOverlay').style.display = 'none'; });
+  });
+  document.getElementById('monthExpSaveBtn').addEventListener('click', async ()=>{
+    if(!fbReady){ alert('Firebase 연결 후 저장할 수 있어요.'); return; }
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    const monthKey = monthKeyOf(y, m);
+    const fuelCost = parseInt(document.getElementById('inpMonthFuel').value, 10) || 0;
+    const miscCost = parseInt(document.getElementById('inpMonthMisc').value, 10) || 0;
+    const btn = document.getElementById('monthExpSaveBtn');
+    btn.disabled = true;
+    try{
+      await db.collection('events').doc('monthExpense-' + monthKey).set({ kind:'monthExpense', monthKey, fuelCost, miscCost, updatedBy: myName });
+      document.getElementById('monthExpOverlay').style.display = 'none';
+    }catch(e){
+      console.error(e);
+      alert('저장하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+    btn.disabled = false;
+  });
+
   function renderCalendar(){
     const y = viewDate.getFullYear();
     const m = viewDate.getMonth();
@@ -748,8 +845,11 @@
         });
       }
     }
+    const half = Math.round(monthNetProfit / 2);
+    const mexp = data.monthExp[monthKeyOf(y, m)] || { fuel:0, misc:0 };
     document.getElementById('monthTotalValue').textContent = monthNetProfit.toLocaleString('ko-KR') + '원';
-    document.getElementById('monthNetProfitValue').textContent = Math.round(monthNetProfit / 2).toLocaleString('ko-KR') + '원';
+    document.getElementById('monthHalfValue').textContent = half.toLocaleString('ko-KR') + '원';
+    document.getElementById('monthNetProfitValue').textContent = (half - mexp.fuel - mexp.misc).toLocaleString('ko-KR') + '원';
     document.getElementById('monthTotalCount').textContent = monthCount + '건';
 
     const firstDay = new Date(y, m, 1);
